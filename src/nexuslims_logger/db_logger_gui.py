@@ -205,7 +205,7 @@ class MainApp(Tk):
         self.geometry(self.screen_res.get_center_geometry_string(350, 530))
         self.minsize(1, 1)
         self.maxsize(3840, 1170)
-        self.resizable(1, 1)
+        self.resizable(0, 0)
         self.title("NexusLIMS Session Logger")
         self.configure(highlightcolor="black")
 
@@ -244,7 +244,7 @@ class MainApp(Tk):
                                             orient=HORIZONTAL,
                                             length=200,
                                             mode='determinate')
-        self.loading_pbar_length = 7.0
+        self.loading_pbar_length = 5.0
         self.loading_status_text = StringVar()
         self.loading_status_text.set('Initiating session logger...')
         self.loading_status_Label = Label(self.setup_frame,
@@ -309,7 +309,9 @@ class MainApp(Tk):
                                  compound=LEFT,
                                  command=self.session_end,
                                  image=self.end_icon)
-        self.end_button.config(fg='black', font=('kDefaultFont',16,'bold'), relief=RAISED)
+        self.end_button.config(fg='black',
+                               font=('kDefaultFont', 16, 'bold'),
+                               relief=RAISED)
         ToolTip(self.end_button,
                 self.tooltip_font,
                 "Ending the session will close this window and start the record"
@@ -324,28 +326,32 @@ class MainApp(Tk):
                                  padx=5, pady=10,
                                  compound=LEFT,
                                  image=self.log_icon)
-        self.log_button.config(fg='black', font=('kDefaultFont',12,'bold'), relief=RAISED)
+        self.log_button.config(fg='black',
+                               font=('kDefaultFont', 12, 'bold'),
+                               relief=RAISED)
         # Add button for logging session note by user
         self.note_icon = PhotoImage(file=resource_path('note.png'))
         self.note_button = Button(self.button_frame,
-                                 text="Add Session Note",
-                                 command=lambda: NoteWindow(parent=self),
-                                 padx=5, pady=10,
-                                 compound=LEFT,
-                                 image=self.note_icon)
+                                  text="Add Session Note",
+                                  command=lambda: NoteWindow(parent=self),
+                                  padx=5, pady=10,
+                                  compound=LEFT,
+                                  image=self.note_icon)
 
-        self.note_button.config(fg='black', font=('kDefaultFont',12,'bold'), relief=RAISED)
-        self.copy_icon =PhotoImage(file=resource_path('copy.png'))
-        self.copydata_button = Button(
-            self.button_frame,
-            text=" Copy Data ",
-            padx=10, pady=10,
-            state=DISABLED,
-            compound=LEFT,
-            command=self.db_logger.copydata,
-            image=self.copy_icon
-        )
-        self.copydata_button.config(fg='black', font=('kDefaultFont',16,'bold'),relief=RAISED)
+        self.note_button.config(fg='black',
+                                font=('kDefaultFont', 12, 'bold'),
+                                relief=RAISED)
+        self.copy_icon = PhotoImage(file=resource_path('copy.png'))
+        self.copydata_button = Button(self.button_frame,
+                                      text=" Copy Data ",
+                                      padx=10, pady=10,
+                                      state=DISABLED,
+                                      compound=LEFT,
+                                      command=self.db_logger.copydata,
+                                      image=self.copy_icon)
+        self.copydata_button.config(fg='black',
+                                    font=('kDefaultFont', 16, 'bold'),
+                                    relief=RAISED)
 
         # grid the Toplevel window contents
         self.logo_label.grid(row=0, column=0, sticky=N, pady=(15, 0))
@@ -371,9 +377,10 @@ class MainApp(Tk):
 
     def session_startup(self):
         self.startup_thread = threading.Thread(
-            target=self.session_startup_worker)
+            target=self.session_startup_worker
+        )
         self.startup_thread.start()
-        self.loading_pbar_length = 7.0
+        self.loading_pbar_length = 5.0
         self.after(100, self.watch_for_startup_result)
 
     def session_startup_worker(self):
@@ -396,12 +403,15 @@ class MainApp(Tk):
                 # we got an inconsistent state from the DB, so ask user
                 # what to do about it
                 response = HangingSessionDialog(
-                    self, self.db_logger, screen_res=self.screen_res).show()
+                    self,
+                    self.db_logger,
+                    screen_res=self.screen_res
+                ).show()
                 if response == 'new':
                     # we need to end the existing session that was found
                     # and then create a new one by changing the session_id to
                     # a new UUID4 and running process_start
-                    self.loading_pbar_length = 13.0
+                    self.loading_pbar_length = 8.0
                     self.db_logger.session_id = self.db_logger.last_session_id
                     self.db_logger.log('Chose to start a new session; '
                                        'ending the existing session with id '
@@ -424,7 +434,7 @@ class MainApp(Tk):
                     # we set the session_id to the one that was previously
                     # found (and set the time accordingly, and only run the
                     # teardown instead of process_start
-                    self.loading_pbar_length = 5.0
+                    self.loading_pbar_length = 1.0
                     self.running_Label_1.configure(text='Continuing the last '
                                                         'session for the')
                     self.running_Label_2.configure(text=' started at ')
@@ -436,7 +446,8 @@ class MainApp(Tk):
                                        1)
                     self.db_logger.session_started = True
                     self.db_logger.session_start_time = datetime.strptime(
-                        self.db_logger.last_session_ts, "%Y-%m-%dT%H:%M:%S.%f")
+                        self.db_logger.last_session_ts,
+                        "%a, %d %b %Y %H:%M:%S %Z")
                     self.db_logger.db_logger_teardown(
                         self.startup_thread_queue,
                         self.startup_thread_exit_queue)
@@ -449,17 +460,17 @@ class MainApp(Tk):
             res = self.startup_thread_queue.get(0)
             self.show_error_if_needed(res)
             if not isinstance(res, Exception):
-                self.loading_status_text.set(res[0] +
-                                             '...' if '!' not in res[0]
-                                             else res[0])
-                self.loading_pbar['value'] = int(res[1]/
-                                                 self.loading_pbar_length * 100)
+                msg, progress = res
+                self.loading_status_text.set(msg)
+                self.loading_pbar['value'] = \
+                    int(progress / self.loading_pbar_length * 100)
                 self.update()
-                if res[0] == 'Unmounted network share':
-                    time.sleep(0.5)
-                    self.instr_string.set(self.db_logger.instr_schema_name)
+                if res[0] == "TEARDOWN":
+                    # time.sleep(0.5)
+                    self.instr_string.set(self.db_logger.instr_schema)
                     self.datetime_string.set(
-                        format_date(self.db_logger.session_start_time))
+                        format_date(self.db_logger.session_start_time)
+                    )
                     self.done_loading()
                 else:
                     self.after(100, self.watch_for_startup_result)
@@ -531,18 +542,16 @@ class MainApp(Tk):
                                               "database...\n(this window will "
                                               "close when completed)")
             self.switch_gui_to_end()
-            self.loading_pbar_length = 10.0
+            self.loading_pbar_length = 6.0
             self.loading_pbar['value'] = 0
             self.loading_status_text.set('Ending the session...')
             self.after(100, self.watch_for_end_result)
 
     def session_end_worker(self):
-        if self.db_logger.db_logger_setup(self.end_thread_queue,
-                                          self.end_thread_exit_queue):
-            if self.db_logger.process_end(self.end_thread_queue,
-                                          self.end_thread_exit_queue):
-                self.db_logger.db_logger_teardown(self.end_thread_queue,
-                                                  self.end_thread_exit_queue)
+        if self.db_logger.process_end(self.end_thread_queue,
+                                        self.end_thread_exit_queue):
+            self.db_logger.db_logger_teardown(self.end_thread_queue,
+                                                self.end_thread_exit_queue)
 
     def watch_for_end_result(self):
         """
@@ -551,26 +560,25 @@ class MainApp(Tk):
         try:
             res = self.end_thread_queue.get(0)
             self.show_error_if_needed(res)
-            self.loading_status_text.set(res[0] + '...')
-            self.loading_pbar['value'] = int(res[1]/self.loading_pbar_length *
-                                             100)
+            msg, progress = res
+            self.loading_status_text.set(msg)
+            self.loading_pbar['value'] = \
+                int(progress / self.loading_pbar_length * 100)
             self.update()
-            if res[0] == 'Unmounted network share':
+            if msg == "TEARDOWN":
                 self.after(3000, self.destroy)
                 self.close_warning(3)
                 self.after(1000, lambda: self.close_warning(2))
                 self.after(2000, lambda: self.close_warning(1))
                 self.after(3000, lambda: self.close_warning(0))
-                # self.after(4000, lambda: self.close_warning(1))
-                # self.after(5000, lambda: self.close_warning(0))
             else:
                 self.after(100, self.watch_for_end_result)
         except queue.Empty:
             self.after(100, self.watch_for_end_result)
 
     def close_warning(self, num_to_show):
-        self.loading_status_text.set('Closing window in {} '
-                                     'seconds...'.format(num_to_show))
+        msg = "Closing window in %d seconds..." % num_to_show
+        self.loading_status_text.set(msg)
 
     def on_closing(self):
         resp = PauseOrEndDialogue(self,
@@ -670,8 +678,8 @@ class PauseOrEndDialogue(Toplevel):
         self.top_frame.grid(row=0, column=0)
         self.error_icon_label.grid(column=0, row=0, padx=20, pady=25)
         self.label_frame.grid(column=1, row=0, padx=0, pady=0)
-        self.top_label.grid(row=0, column=0, padx=10, pady=0, sticky=(W,S))
-        self.warn_label.grid(row=1, column=0, padx=10, pady=(5,0))
+        self.top_label.grid(row=0, column=0, padx=10, pady=0, sticky=(W, S))
+        self.warn_label.grid(row=1, column=0, padx=10, pady=(5, 0))
 
         self.button_frame.grid(row=1, column=1, ipadx=10, ipady=5)
         self.end_button.grid(row=0, column=0,  padx=10)
@@ -743,15 +751,16 @@ class HangingSessionDialog(Toplevel):
 
         if db_logger.last_session_ts is not None:
             last_session_dt = datetime.strptime(db_logger.last_session_ts,
-                                                "%Y-%m-%dT%H:%M:%S.%f")
+                                                "%a, %d %b %Y %H:%M:%S %Z")
             last_session_timestring = format_date(last_session_dt,
                                                   with_newline=False)
         else:
             last_session_timestring = 'UNKNOWN'
 
         self.new_icon = PhotoImage(file=resource_path('file-plus.png'))
-        self.continue_icon = PhotoImage(file=resource_path(
-            'arrow-alt-circle-right.png'))
+        self.continue_icon = PhotoImage(
+            file=resource_path('arrow-alt-circle-right.png')
+        )
         self.error_icon = PhotoImage(file=resource_path('error-icon.png'))
 
         self.top_frame = Frame(self)
@@ -801,8 +810,8 @@ class HangingSessionDialog(Toplevel):
         self.top_frame.grid(row=0, column=0)
         self.error_icon_label.grid(column=0, row=0, padx=20, pady=25)
         self.label_frame.grid(column=1, row=0, padx=0, pady=0)
-        self.top_label.grid(row=0, column=0, padx=10, pady=0, sticky=(W,S))
-        self.warn_label.grid(row=1, column=0, padx=10, pady=(5,0))
+        self.top_label.grid(row=0, column=0, padx=10, pady=0, sticky=(W, S))
+        self.warn_label.grid(row=1, column=0, padx=10, pady=(5, 0))
 
         self.button_frame.grid(row=1, column=1,
                                sticky=S, ipadx=10, ipady=5)
@@ -898,9 +907,9 @@ class LogWindow(Toplevel):
                 "Copy log information to clipboard", delay=0.25)
 
         def _close_cmd():
-            """Fix for LogWindow preventing app from closing if there was an
-            error"""
-            parent.db_logger.umount_network_share()
+            """
+            Fix for LogWindow preventing app from closing if there was an error
+            """
             self.destroy()
             parent.destroy()
             sys.exit(1)
@@ -935,8 +944,6 @@ class LogWindow(Toplevel):
         if is_error:
             time_left = 3
             self.change_close_button(3, DISABLED)
-            # self.after(1000, lambda: self.change_close_button(4))
-            # self.after(2000, lambda: self.change_close_button(3))
             self.after(1000, lambda: self.change_close_button(2))
             self.after(2000, lambda: self.change_close_button(1))
             self.after(3000, lambda: self.change_close_button(0, ACTIVE))
@@ -945,8 +952,10 @@ class LogWindow(Toplevel):
         if num_to_show == 0:
             self.close_button.configure(text='Close', state=state)
         else:
-            self.close_button.configure(text='Close ({})'.format(
-                num_to_show), state=state)
+            self.close_button.configure(
+                text='Close (%d})' % num_to_show,
+                state=state
+            )
         self.close_button.grid(row=0, column=1, sticky=W, ipadx=10, padx=10)
 
     def copy_text_to_clipboard(self):
@@ -997,7 +1006,8 @@ class NoteWindow(Toplevel):
         self.note = StringVar()
         self.note.set(self.old_note)
 
-        self.session_note = Text(self, width=40, height=10, wrap='word', font=("TkDefaultFont", 16))
+        self.session_note = Text(self, width=40, height=10,
+                                 wrap='word', font=("TkDefaultFont", 16))
         self.s_v = ttk.Scrollbar(self,
                                  orient=VERTICAL,
                                  command=self.session_note.yview)
@@ -1017,10 +1027,10 @@ class NoteWindow(Toplevel):
         self.close_icon = PhotoImage(file=resource_path('window-close.png'))
 
         self.clear_button = Button(self.button_frame,
-                                  text='Clear',  # clear saved note',
-                                  command= self.delete_note,
-                                  padx=10, pady=5, width=60,
-                                  compound="left", image=self.clear_icon)
+                                   text='Clear',  # clear saved note',
+                                   command=self.delete_note,
+                                   padx=10, pady=5, width=60,
+                                   compound="left", image=self.clear_icon)
 
         self.save_button = Button(self.button_frame,
                                   text='Save',  # log to clipboard',
@@ -1035,7 +1045,6 @@ class NoteWindow(Toplevel):
             """Fix for LogWindow preventing app from closing if there was an
             error"""
             parent.notes = self.old_note
-            parent.db_logger.umount_network_share()
             self.destroy()
             parent.destroy()
             sys.exit(1)
@@ -1071,25 +1080,23 @@ class NoteWindow(Toplevel):
         if is_error:
             time_left = 3
             self.change_close_button(3, DISABLED)
-            # self.after(1000, lambda: self.change_close_button(4))
-            # self.after(2000, lambda: self.change_close_button(3))
             self.after(1000, lambda: self.change_close_button(2))
             self.after(2000, lambda: self.change_close_button(1))
             self.after(3000, lambda: self.change_close_button(0, ACTIVE))
 
     def save_note(self):
-            #Save the current session note in the text box, overwrite previous saved note
-            self.note = self.session_note.get("1.0", END)
-            #escape single quote by doubling it so it won't cause issues with sql insert_statement
-            self.note = self.note.replace("'", "''")
-            if not (self.note == self.old_note):
-                    self.old_note = self.note
-                    #self.parent.notes = self.note
-                    self.parent.db_logger.session_note = self.note
+        # Save the current session note in the text box, overwrite previous saved note
+        self.note = self.session_note.get("1.0", END)
+        # escape single quote by doubling it so it won't cause issues with sql insert_statement
+        self.note = self.note.replace("'", "''")
+        if not (self.note == self.old_note):
+            self.old_note = self.note
+            #self.parent.notes = self.note
+            self.parent.db_logger.session_note = self.note
 
     def delete_note(self):
-            #delete the current session note in the text box
-            self.session_note.delete("1.0", END)
+        # delete the current session note in the text box
+        self.session_note.delete("1.0", END)
 
     def change_close_button(self, num_to_show, state=DISABLED):
         if num_to_show == 0:
@@ -1178,7 +1185,7 @@ class ToolTip(Toplevel):
             msg_wdgt = Message(self, textvariable=self.msgVar, bg='#FFFFDD',
                                font=tooltip_font, aspect=1000, pady=0)
 
-            hdr_wdgt.grid(row=0, sticky=(W, E, S), pady=(0,0))
+            hdr_wdgt.grid(row=0, sticky=(W, E, S), pady=(0, 0))
             msg_wdgt.grid(row=1)
 
         else:

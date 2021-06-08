@@ -1,9 +1,5 @@
 {
-    "database_name": "nexuslims_db.sqlite",
-    "database_relpath": "TEMdata/nexuslims",
-    "networkdrive_hostname": "192.168.0.166",
-    "networkdrive_workgroup": "",
-    "networkdrive_username": "",
-    "networddrive_password": "",
-    "daq_relpath": "TEMdata/daq"
+    "api_url": "https://nexuslims-computing.appspot.com",
+    "filestore_path": "",
+    "filetypes_sync": []
 }

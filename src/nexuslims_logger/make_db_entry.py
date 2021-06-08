@@ -30,81 +30,18 @@
 # the Windows XP-based microscope PCs. Using this version of Python with
 # pyinstaller 3.5 seems to work on the 642 Titan
 
-import argparse
-import contextlib
 import os
-import pathlib
 import platform
 import queue
 import random
 import shutil
-import socket
-import sqlite3
-import string
 import subprocess
 import sys
 from datetime import datetime
+from urllib.parse import urljoin
 from uuid import uuid4
 
-
-def get_drives():
-    """
-    Get the drive letters (uppercase) in current use by Windows
-
-    Adapted from https://stackoverflow.com/a/827398/1435788
-
-    Returns
-    -------
-    drives : :obj:`list` of str
-        A list of drive letters currently in use
-    """
-    drives = []
-
-    from ctypes import windll
-    bitmask = windll.kernel32.GetLogicalDrives()
-    for letter in string.ascii_uppercase:
-        if bitmask & 1:
-            drives.append(letter)
-        bitmask >>= 1
-
-    return drives
-
-
-def get_free_drives():
-    """
-    Get currently unused drive letters, leaving out A through G and M for
-    safety (since those are often Windows drives and the M drive is used for
-    ``mmfnexus``
-
-    Returns
-    -------
-    not_in_use : :obj:`list` of str
-        A list of "safe" drive letters not currently in use
-    """
-    in_use = get_drives()
-    not_in_use = [lett for lett in string.ascii_uppercase if lett not in in_use]
-    not_in_use = [lett for lett in not_in_use if lett not in 'ABCDEFGM']
-    return not_in_use
-
-
-def get_first_free_drive():
-    """
-    Get the first available drive letter that is not being used on this computer
-
-    Returns
-    -------
-    first_free : str
-        The first free drive letter that should be safe to use with colon
-        appended
-    """
-    if sys.platform == "win32":
-        first_free = get_free_drives()[0]
-        return first_free + ':'
-    else:
-        res = os.path.expanduser("~/nexuslims/mnt")
-        if not os.path.isdir(res):
-            os.makedirs(res)
-        return res
+import requests
 
 
 class DBSessionLogger:
@@ -118,14 +55,17 @@ class DBSessionLogger:
         user : str
             The user to attach to this record
         """
-        self.log_text = ""
         self.config = config
         self.verbosity = verbosity
-        self.db_name = config["database_name"]
-        self.drive_letter = get_first_free_drive()
         self.user = user
-        self.hostname = config["networkdrive_hostname"]
-        self.filestore_path = None
+
+        self.cpu_name = platform.node().split('.')[0]
+        self.session_id = str(uuid4())
+
+        self.instr_info = None
+        self.instr_pid = None
+        self.instr_schema = None
+
         self.session_started = False
         self.session_start_time = None
         self.last_entry_type = None
@@ -133,22 +73,9 @@ class DBSessionLogger:
         self.last_session_row_number = None
         self.last_session_ts = None
         self.progress_num = 0
+
+        self.log_text = ""
         self.session_note = ""
-
-        self.db_path = str(pathlib.Path(config["database_relpath"]))
-        self.password = config["networddrive_password"] if config["networddrive_password"] else None
-        self.full_path = os.path.join(self.drive_letter, self.db_name)
-        self.cpu_name = platform.node().split('.')[0]
-
-        self.session_id = str(uuid4())
-        self.instr_pid = None
-        self.instr_schema_name = None
-
-        if sys.platform == 'win32':
-            self.log('Used drives are: {}'.format(get_drives()), 2)
-            self.log('Unused drives are: {}'.format(get_free_drives()), 2)
-            self.log('First available drive letter is {}'.format(
-                self.drive_letter), 2)
 
     def log(self, to_print, this_verbosity):
         """
@@ -246,185 +173,6 @@ class DBSessionLogger:
                 e.output), 0)
         return output
 
-    def mount_network_share(self, mount_point=None):
-        """
-        Mount the path containing the database to the first free drive letter
-        found using Windows `cmd`. Due to some Windows limitations,
-        this requires looking up the server's IP address
-        and mounting using the IP rather than the actual domain name
-
-        Parameters
-        ----------
-        mount_point : str
-            The mount point on the netword drive. The default points to the
-            `self.db_path`.
-        """
-
-        if mount_point is None:
-            mount_point = self.db_path
-        mount_point = str(pathlib.Path(mount_point))
-
-        # we should not have to disconnect anything because we're using free
-        # letter:
-        # self.log('unmounting existing N:', 2)
-        # _ = self.run_cmd(r'net use N: /delete /y')
-
-        ip = socket.gethostbyname(self.hostname)
-        self.log('found network drive at {}'.format(ip), 2)
-
-        do_mount = True
-        if sys.platform == "win32":
-            current_mounts = str(self.run_cmd('net use')).split('\r\n')
-            self.log('Currently mounted: ', 2)
-            self.log('Looking for '
-                    r'{}\{}'.format(ip,
-                                    self.db_path).replace(r'\\', '\\'), 2)
-            for m in current_mounts:
-                self.log(m, 2)
-                if r'{}\{}'.format(ip, self.db_path).replace(r'\\', '\\') in m:
-                    old_drive_letter = self.drive_letter
-                    for item in m.split():
-                        if len(item) == 2 and item[1] == ':' \
-                            and item[0] in string.ascii_uppercase:
-                            self.drive_letter = item
-                            break
-
-                    self.full_path = '{}\\{}'.format(self.drive_letter, self.db_name)
-                    self.log('{} is already mounted'.format(self.drive_letter), 0)
-                    do_mount = False
-        else:
-            if os.listdir(self.drive_letter):
-                # reuse the same mount point, for safety, unmount first
-                self.umount_network_share()
-
-        if do_mount:
-            workgroup = self.config.get("networkdrive_workgroup")
-            username = self.config.get("networkdrive_username")
-            password = self.config.get("networddrive_password")
-
-            if sys.platform == "win32":
-                mount_command = 'net use {} \\\\{}\\{} '.format(self.drive_letter,
-                                                                ip,
-                                                                mount_point)
-                credential_part = ""
-                if username:
-                    if workgroup:
-                        credential_part = "/user:%s\\%s" % (workgroup, username)
-                    else:
-                        credential_part = "/user:%s" % username
-                    if password:
-                        credential_part += ' ' + password
-                if credential_part:
-                    mount_command += credential_part
-            elif sys.platform == "darwin":
-                credential_part = ""
-                if workgroup:
-                    credential_part += workgroup + ';'
-                if username:
-                    credential_part += username
-                    if password:
-                        credential_part += ':' + password
-                if credential_part:
-                    credential_part += '@'
-
-                # Here assuming network drive is SMB drive
-                mount_command = "mount -t smbfs //%s%s/%s %s" % (
-                    credential_part, ip, mount_point, self.drive_letter)
-            else:
-                raise NotImplementedError("Current OS -- %s not supported." % sys.platform)
-
-            self.log('mounting {}'.format(self.drive_letter), 2)
-
-            # mounting requires a security policy:
-            # https://support.microsoft.com/en-us/help/968264/error-message-when-
-            # you-try-to-map-to-a-network-drive-of-a-dfs-share-by
-
-            command_shown = mount_command
-            if self.password is not None:
-                command_shown = command_shown.replace(self.password, '********')
-
-            self.log('using {}'.format(command_shown), 2)
-
-            p = self.run_cmd(mount_command)
-
-            if 'error' in str(p):
-                if '1312' in str(p):
-                    self.log('Visit https://bit.ly/38DvqVh\n'
-                             'to see how to allow mounting network drives as '
-                             'another user.\n'
-                             '(You\'ll need to change HKLM\\System\\'
-                             'CurrentControlSet\\Control\\Lsa\\'
-                             'DisableDomainCreds '
-                             'to 0 in the registry)', 0)
-                raise ConnectionError('Could not mount network share to access '
-                                      'database' + " (\"DisableDomanCreds\" "
-                                                   "error)" if '1312' in str(p)
-                                                   else "")
-        else:
-            self.log('Using existing mount point {}'.format(
-                self.drive_letter), 1)
-
-    def umount_network_share(self):
-        """
-        Unmount the network share using the Windows `cmd`
-        """
-        self.log('unmounting {}'.format(self.drive_letter), 2)
-        if sys.platform == 'win32':
-            p = self.run_cmd(r'net use {} /del /y'.format(self.drive_letter))
-        elif sys.platform == "darwin":
-            p = self.run_cmd("umount %s" % self.drive_letter)
-        else:
-            raise NotImplementedError("Current OS -- %s not supported." % sys.platform)
-        if str(p):
-            self.log(str(p).strip(), 0)
-
-    def get_instr_pid(self):
-        """
-        Using the name of this computer, get the matching instrument PID from
-        the database
-
-        Returns
-        -------
-        instrument_pid : str
-            The PID for the instrument corresponding to this computer
-        instrument_schema_name : str
-            The schema name for the instrument corresponding to this computer
-        filestore_path : str
-            The filestore path for the instrument corresponding to this computer
-        """
-        # Get the instrument pid from the computer name of this computer
-        with contextlib.closing(sqlite3.connect(self.full_path)) as con:
-            self.log('Looking in database for computer name matching '
-                     '{}'.format(self.cpu_name), 1)
-            with con as cur:
-                res = cur.execute('SELECT instrument_pid, schema_name, filestore_path '
-                                  'from instruments '
-                                  'WHERE '
-                                  'computer_name is '
-                                  '\'{}\''.format(self.cpu_name))
-                one_result = res.fetchone()
-                self.log('Database result is {}'.format(one_result), 2)
-                if one_result is not None:
-                    instrument_pid, instrument_schema_name, filestore_path = one_result
-                else:
-                    instrument_pid, instrument_schema_name, filestore_path = (None, None, None)
-
-            self.log('instrument_pid: {}, instrument_schema_name: {}, filestore_path: {}'.format(
-                *one_result), 2)
-            if instrument_pid is None:
-                raise sqlite3.DataError('Could not find an instrument matching '
-                                        'this computer\'s name '
-                                        '({}) '.format(self.cpu_name) +
-                                        'in the database!\n\n'
-                                        'This should not happen. Please '
-                                        'contact miclims@nist.gov as soon as '
-                                        'possible.')
-            else:
-                self.log('Found instrument ID: '
-                         '{} using '.format(instrument_pid) +
-                         '{}'.format(self.cpu_name), 1)
-        return instrument_pid, instrument_schema_name, filestore_path
-
     def last_session_ended(self, thread_queue=None, exit_queue=None):
         """
         Check the database for this instrument to make sure that the last
@@ -459,67 +207,49 @@ class DBSessionLogger:
                      "this instrument was an \"END\" log", -1)
             return False
 
-        # Get last inserted line for this instrument that is not a record
-        # generation (should be either a START or END)
-        query_statement = 'SELECT event_type, session_identifier, ' \
-                          'id_session_log, timestamp FROM session_log WHERE ' \
-                          'instrument = "{}" '.format(self.instr_pid) + \
-                          'AND NOT event_type = "RECORD_GENERATION" ' + \
-                          'ORDER BY timestamp DESC LIMIT 1'
-
-        self.log('last_session_ended query: {}'.format(query_statement), 2)
-
         self.check_exit_queue(thread_queue, exit_queue)
-        with contextlib.closing(sqlite3.connect(self.full_path)) as con:
-            with con as cur:
-                try:
-                    self.check_exit_queue(thread_queue, exit_queue)
-                    res = cur.execute(query_statement)
-                    row = res.fetchone()
-                    if row is None:
-                        # If there is no result, this must be the first time
-                        # we're connecting to the database with this
-                        # instrument, so pretend the last session was "END"
-                        self.last_entry_type = "END"
-                    else:
-                        self.last_entry_type, self.last_session_id, \
-                        self.last_session_row_number, self.last_session_ts = row
-                    if self.last_entry_type == "END":
-                        self.log('Verified database consistency for the '
-                                 '{}'.format(self.instr_schema_name), 1)
-                        if thread_queue:
-                            thread_queue.put(('Verified database consistency '
-                                              'for the {}'.format(
-                                                  self.instr_schema_name),
-                                              self.progress_num))
-                            self.progress_num += 1
-                        return True
-                    elif self.last_entry_type == "START":
-                        self.log('Database is inconsistent for the '
-                                 '{} '.format(self.instr_schema_name) +
-                                 '(last entry [id_session_log = '
-                                 '{}]'.format(self.last_session_row_number) +
-                                 ' was a "START")', 0)
-                        if thread_queue:
-                            thread_queue.put(('Database is inconsistent!',
-                                              self.progress_num))
-                            self.progress_num += 1
-                        return False
-                    else:
-                        raise sqlite3.IntegrityError(
-                            "Last entry for the "
-                            "{} ".format(self.instr_schema_name) +
-                            "was neither \"START\" or \"END\" (value was "
-                            "\"{}\")".format(self.last_entry_type))
-                except Exception as e:
-                    if thread_queue:
-                        thread_queue.put(e)
-                    self.log("Error encountered while verifying "
-                             "database consistency for the "
-                             "{}".format(self.instr_schema_name), -1)
-                    self.log_exception(e)
-                    return False
-        pass
+        url = urljoin(self.config["api_url"], "/api/lastsession")
+        res = requests.get(url, params={"instrument": self.instr_pid})
+
+        if res.status_code >= 500:
+            msg = str(res.content)
+            self.log(msg, -1)
+            if thread_queue:
+                thread_queue.put(Exception(msg))
+            return False
+        if res.status_code == 404:
+            self.last_entry_type = "END"
+
+        if res.status_code == 200:
+            data = res.json()["data"]
+            self.last_entry_type = data["event_type"]
+            self.last_session_id = data["session_identifier"]
+            self.last_session_row_number = data["id_session_log"]
+            self.last_session_ts = data["timestamp"]
+
+        if self.last_entry_type == "END":
+            msg = "Verified database consistency for the %s." % self.instr_schema
+            self.log(msg, 2)
+            if thread_queue:
+                thread_queue.put((msg, self.progress_num))
+                self.progress_num += 1
+            return True
+        elif self.last_entry_type == "START":
+            msg = "Database is inconsistent for the %s. " \
+                  "(last entry [id_session_log = %s] was a `START`)" % (
+                      self.instr_schema, self.last_session_row_number)
+            self.log(msg, 0)
+            if thread_queue:
+                thread_queue.put((msg, self.progress_num))
+                self.progress_num += 1
+            return False
+
+        msg = "Last entry for the %s was neither `START` or `END` (value was %s)" % (
+            self.instr_schema, self.last_entry_type)
+        self.log(msg, -1)
+        if thread_queue:
+            thread_queue.put(Exception(msg))
+        return False
 
     def process_start(self, thread_queue=None, exit_queue=None):
         """
@@ -527,60 +257,56 @@ class DBSessionLogger:
 
         Returns True if successful, False if not
         """
-        insert_statement = "INSERT INTO session_log (instrument, " \
-                           " event_type, session_identifier, session_note" + \
-                           (", user) " if self.user else ") ") + \
-                           "VALUES ('{}', 'START', ".format(self.instr_pid) + \
-                           "'{}'".format(self.session_id) + \
-                           ", '{}'".format(self.session_note) + \
-                           (", '{}');".format(self.user) if self.user else ");")
-
-        self.log('insert_statement: {}'.format(insert_statement), 2)
-
+        # Insert START log
         self.check_exit_queue(thread_queue, exit_queue)
-        # Get last entered row with this session_id (to make sure it's correct)
-        with contextlib.closing(sqlite3.connect(self.full_path)) as con:
-            with con as cur:
-                try:
-                    self.check_exit_queue(thread_queue, exit_queue)
-                    _ = cur.execute(insert_statement)
-                    self.session_started = True
-                    if thread_queue:
-                        thread_queue.put(('"START" session inserted into db',
-                                          self.progress_num))
-                        self.progress_num += 1
-                except Exception as e:
-                    if thread_queue:
-                        thread_queue.put(e)
-                    self.log("Error encountered while inserting \"START\" "
-                             "entry into database", -1)
-                    return False
-            with con as cur:
-                try:
-                    self.check_exit_queue(thread_queue, exit_queue)
-                    r = cur.execute("SELECT * FROM session_log WHERE "
-                                    "session_identifier="
-                                    "'{}' ".format(self.session_id) +
-                                    "AND event_type = 'START'"
-                                    "ORDER BY timestamp DESC " +
-                                    "LIMIT 1;")
-                except Exception as e:
-                    if thread_queue:
-                        thread_queue.put(e)
-                    self.log("Error encountered while verifying that session"
-                             "was started", -1)
-                    return False
-                id_session_log = r.fetchone()
-            self.check_exit_queue(thread_queue, exit_queue)
-            self.log('Verified insertion of row {}'.format(id_session_log), 1)
-            self.session_start_time = datetime.strptime(
-                id_session_log[3], "%Y-%m-%dT%H:%M:%S.%f")
+        url = urljoin(self.config["api_url"], "/api/session")
+        payload = {
+            "event_type": "START",
+            "instrument": self.instr_pid,
+            "user": self.user,
+            "session_identifier": self.session_id,
+            "session_note": self.session_note
+        }
+        res = requests.post(url, data=payload)
+        if res.status_code >= 500:
+            msg = "Error inserting `START` into DB. " + str(res.content)
+            self.log(msg, -1)
             if thread_queue:
-                thread_queue.put(('Verified "START" session inserted into db',
-                                  self.progress_num))
-                self.progress_num += 1
+                thread_queue.put(Exception(msg))
+            return False
 
-            return True
+        self.session_started = True
+        if thread_queue:
+            msg = "`START` session inserted into db."
+            thread_queue.put((msg, self.progress_num))
+            self.progress_num += 1
+
+        # verify insertion success by query db
+        self.check_exit_queue(thread_queue, exit_queue)
+        url = urljoin(self.config["api_url"], "/api/lastsession")
+        payload = {
+            "session_identifier": self.session_id,
+            "event_type": "START",
+        }
+        res = requests.get(url, params=payload)
+        if res.status_code != 200:
+            msg = "Error verifying that session was started. " + str(res.content)
+            self.log(msg, -1)
+            if thread_queue:
+                thread_queue.put(Exception(msg))
+            return False
+
+        data = res.json()["data"]
+        self.check_exit_queue(thread_queue, exit_queue)
+        self.session_start_time = datetime.strptime(
+            data["timestamp"], "%a, %d %b %Y %H:%M:%S %Z")
+        msg = "Verified insertion of row " + str(data)
+        self.log(msg, 2)
+        if thread_queue:
+            thread_queue.put((msg, self.progress_num))
+            self.progress_num += 1
+
+        return True
 
     def process_end(self, thread_queue=None, exit_queue=None):
         """
@@ -588,175 +314,151 @@ class DBSessionLogger:
         and change the status of the corresponding `'START'` entry from
         `'WAITING_FOR_END'` to `'TO_BE_BUILT'`
         """
-        user_string = "AND user='{}'".format(self.user) if self.user else ''
-
-        insert_statement = "INSERT INTO session_log " \
-                           "(instrument, event_type, " \
-                           "record_status, session_identifier, session_note" + \
-                           (", user) " if self.user else ") ") + \
-                           "VALUES ('{}',".format(self.instr_pid) + \
-                           "'END', 'TO_BE_BUILT', " + \
-                           "'{}'".format(self.session_id) + \
-                           ", '{}'".format(self.session_note) + \
-                           (", '{}');".format(self.user) if self.user else ");")
-
-        # Get the most 'START' entry for this instrument and session id
-        get_last_start_id_query = "SELECT id_session_log FROM session_log " + \
-                                  "WHERE instrument = " + \
-                                  "'{}' ".format(self.instr_pid) + \
-                                  "AND event_type = 'START' " + \
-                                  "{} ".format(user_string) + \
-                                  "AND session_identifier = " + \
-                                  "'{}'".format(self.session_id) + \
-                                  "AND record_status = 'WAITING_FOR_END';"
-        self.log('query: {}'.format(get_last_start_id_query), 2)
-
-        with sqlite3.connect(self.full_path) as con:
-            self.log('Inserting END; insert_statement: {}'.format(
-                insert_statement), 2)
-            try:
-                self.check_exit_queue(thread_queue, exit_queue)
-                _ = con.execute(insert_statement)
-                if thread_queue:
-                    thread_queue.put(('"END" session log inserted into db',
-                                      self.progress_num))
-                    self.progress_num += 1
-            except Exception as e:
-                if thread_queue:
-                    thread_queue.put(e)
-                self.log("Error encountered while insert \"END\" log for "
-                         "session", -1)
-                return False
-
-            try:
-                self.check_exit_queue(thread_queue, exit_queue)
-                res = con.execute("SELECT * FROM session_log WHERE "
-                                  "session_identifier="
-                                  "'{}' ".format(self.session_id) +
-                                  "AND event_type = 'END'"
-                                  "ORDER BY timestamp DESC " +
-                                  "LIMIT 1;")
-            except Exception as e:
-                if thread_queue:
-                    thread_queue.put(e)
-                self.log("Error encountered while verifying that session"
-                         "was ended", -1)
-                return False
-            id_session_log = res.fetchone()
-            self.log('Inserted row {}'.format(id_session_log), 1)
+        # Insert END log
+        self.check_exit_queue(thread_queue, exit_queue)
+        url = urljoin(self.config["api_url"], "/api/session")
+        payload = {
+            "instrument": self.instr_pid,
+            "event_type": "END",
+            "record_status": "TO_BE_BUILT",
+            "session_identifier": self.session_id,
+            "session_note": self.session_note,
+            "user": self.user,
+        }
+        res = requests.post(url, data=payload)
+        if res.status_code != 200:
+            msg = "Error inserting `END` log for session"
+            self.log(msg, -1)
             if thread_queue:
-                thread_queue.put(('Verified "END" session inserted into db',
-                                  self.progress_num))
-                self.progress_num += 1
+                thread_queue.put(Exception(msg))
+            return False
 
-            try:
-                self.check_exit_queue(thread_queue, exit_queue)
-                res = con.execute(get_last_start_id_query)
-                results = res.fetchall()
-                if len(results) == 0:
-                    raise LookupError("No matching 'START' event found")
-                elif len(results) > 1:
-                    raise LookupError("More than one 'START' event found with "
-                                      "session_identifier = "
-                                      "'{}'".format(self.session_id))
-                last_start_id = results[-1][0]
-                self.log('SELECT instrument results: {}'.format(last_start_id),
-                         2)
-                if thread_queue:
-                    thread_queue.put(('Matching "START" session log found',
-                                      self.progress_num))
-                    self.progress_num += 1
-            except Exception as e:
-                if thread_queue:
-                    thread_queue.put(e)
-                self.log("Error encountered while getting matching \"START\" "
-                         "log", -1)
-                return False
+        msg = "`END` session log inserted into db"
+        self.log(msg, 1)
+        if thread_queue:
+            thread_queue.put((msg, self.progress_num))
+            self.progress_num += 1
 
-            try:
-                # Update previous START event record status
-                self.check_exit_queue(thread_queue, exit_queue)
-                res = con.execute("SELECT * FROM session_log WHERE " +
-                                  "id_session_log = {}".format(last_start_id))
-                self.log('Row to be updated: {}'.format(res.fetchone()), 1)
-                if thread_queue:
-                    thread_queue.put(('Matching "START" session log found',
-                                      self.progress_num))
-                    self.progress_num += 1
-                update_statement = "UPDATE session_log SET " + \
-                                   "record_status = 'TO_BE_BUILT' WHERE " + \
-                                   "id_session_log = {}".format(last_start_id)
-                self.check_exit_queue(thread_queue, exit_queue)
-                _ = con.execute(update_statement)
-                if thread_queue:
-                    thread_queue.put(('Matching "START" session log\'s status '
-                                      'updated',
-                                      self.progress_num))
-                    self.progress_num += 1
+        # verify insertion success by querying
+        self.check_exit_queue(thread_queue, exit_queue)
+        url = urljoin(self.config["api_url"], "/api/lastsession")
+        payload = {
+            "session_identifier": self.session_id,
+            "event_type": "END",
+        }
+        res = requests.get(url, params=payload)
+        if res.status_code != 200:
+            msg = "Error verifying that session was ended. " + str(res.content)
+            self.log(msg, -1)
+            if thread_queue:
+                thread_queue.put(Exception(msg))
+            return False
 
-                self.check_exit_queue(thread_queue, exit_queue)
-                res = con.execute("SELECT * FROM session_log WHERE " +
-                                  "id_session_log = {}".format(last_start_id))
-                if thread_queue:
-                    thread_queue.put(('Verified updated row',
-                                      self.progress_num))
-                    self.progress_num += 1
-            except Exception as e:
-                if thread_queue:
-                    thread_queue.put(e)
-                self.log("Error encountered while updating matching \"START\" "
-                         "log's status", -1)
-                return False
+        data = res.json()["data"]
+        msg = "Verified `END` session inserted into db. " + str(data)
+        self.log(msg, 2)
+        if thread_queue:
+            thread_queue.put((msg, self.progress_num))
+            self.progress_num += 1
 
-            self.log('Row after updating: {}'.format(res.fetchone()), 1)
-            self.log('Finished ending session {}'.format(self.session_id), 1)
+        # Query matched last start
+        self.check_exit_queue(thread_queue, exit_queue)
+        url = urljoin(self.config["api_url"], "/api/lastsession")
+        payload = {
+            "session_identifier": self.session_id,
+            "event_type": "START",
+        }
+        res = requests.get(url, params=payload)
+        if res.status_code != 200:
+            msg = "Error getting matching `START` log. " + str(res.content)
+            self.log(msg, -1)
+            if thread_queue:
+                thread_queue.put(Exception(msg))
+            return False
 
-            return True
+        data = res.json()["data"]
+        msg = "Found matched `START` log: " + str(data)
+        self.log(msg, 2)
+        if thread_queue:
+            thread_queue.put((msg, self.progress_num))
+            self.progress_num += 1
+
+        last_start_id = data["id_session_log"]
+
+        # Update matched last start
+        self.check_exit_queue(thread_queue, exit_queue)
+        url = urljoin(self.config["api_url"], "/api/session")
+        payload = {
+            "id_session_log": last_start_id,
+        }
+        res = requests.put(url, data=payload)
+        if res.status_code != 200:
+            msg = "Error updating matching `START` log's status. " + str(res.content)
+            self.log(msg, -2)
+            if thread_queue:
+                thread_queue.put(Exception(msg))
+            return False
+
+        msg = "Matching `START` session log's status updated."
+        self.log(msg, 1)
+        if thread_queue:
+            thread_queue.put((msg, self.progress_num))
+            self.progress_num += 1
+
+        # Verify update success by querying
+        self.check_exit_queue(thread_queue, exit_queue)
+        res = requests.get(url, params=payload)
+        if res.status_code != 200:
+            msg = "Error updating matching `START` log's status. " + str(res.content)
+            self.log(msg, -2)
+            if thread_queue:
+                thread_queue.put(Exception(msg))
+            return False
+
+        data = res.json()["data"]
+        msg = "Verified updated row: " + str(data)
+        self.log(msg, 2)
+        if thread_queue:
+            thread_queue.put((msg, self.progress_num))
+            self.progress_num += 1
+
+        self.log("Finished ending session %s" % self.session_id, 1)
+
+        return True
 
     def db_logger_setup(self, thread_queue=None, exit_queue=None):
         """
-        setup routine:
-        1) mount network share.
-        2) check db exists.
-        3) get instrument info (pid, schema name).
+        get instrument info (pid, schema name).
         """
 
-        self.log('username is {}'.format(self.user), 1)
-        self.log('computer name is {}'.format(self.cpu_name), 1)
-        try:
-            self.check_exit_queue(thread_queue, exit_queue)
-            self.log('running `mount_network_share()`', 2)
-            self.mount_network_share()
-            if not os.path.isfile(self.full_path):
-                raise FileNotFoundError('Could not find NexusLIMS database at '
-                                        '{}'.format(self.full_path))
-            else:
-                self.log('Path to database is {}'.format(self.full_path), 1)
-        except Exception as e:
-            thread_queue.put(e)
-            self.log("Could not mount the network share holding the "
-                     "database. Details:", -1)
-            self.log_exception(e)
+        self.log("Username: %s" % self.user, 1)
+        self.log("Computer Name: %s" % self.cpu_name, 1)
+        self.log("Session ID: %s" % self.session_id, 1)
+
+        self.check_exit_queue(thread_queue, exit_queue)
+        url = urljoin(self.config["api_url"], "/api/instrument")
+        payload = {
+            "computer_name": self.cpu_name,
+        }
+        res = requests.get(url, params=payload)
+        if res.status_code != 200:
+            msg = "Error fetching instrument information from DB. " + str(res.content)
+            self.log(msg, -1)
+            if thread_queue:
+                thread_queue.put(Exception(msg))
             return False
+
+        data = res.json()["data"]
+        msg = "Connected to db"
+        self.log(msg, 1)
+        self.log("Instrument info: " + str(data), 2)
         if thread_queue:
-            self.progress_num = 1
-            thread_queue.put(('Mounted network share', self.progress_num))
+            thread_queue.put((msg, self.progress_num))
             self.progress_num += 1
-        self.log('running `get_instr_pid()`', 2)
-        try:
-            self.check_exit_queue(thread_queue, exit_queue)
-            self.instr_pid, self.instr_schema_name, self.filestore_path = self.get_instr_pid()
-        except Exception as e:
-            thread_queue.put(e)
-            self.log("Could not fetch instrument PID and name from database. "
-                     "Details:", -1)
-            self.log_exception(e)
-            return False
-        self.log('Found PID: {} and name: {}'.format(self.instr_pid,
-                                                     self.instr_schema_name), 2)
-        if thread_queue:
-            thread_queue.put(('Instrument PID found', self.progress_num))
-            self.progress_num += 1
+
+        self.instr_info = data
+        self.instr_pid = self.instr_info["instrument_pid"]
+        self.instr_schema = self.instr_info["schema_name"]
 
         return True
 
@@ -787,29 +489,12 @@ class DBSessionLogger:
     def db_logger_teardown(self, thread_queue=None, exit_queue=None):
         """
         teardown routine
-        1) unmount network share.
         """
-
-        try:
-            if thread_queue:
-                thread_queue.put(('Unmounting the database network share',
-                                  self.progress_num))
-                self.progress_num += 1
-            self.check_exit_queue(thread_queue, exit_queue)
-            self.log('running `umount_network_share()`', 2)
-            self.umount_network_share()
-        except Exception as e:
-            if thread_queue:
-                thread_queue.put(e)
-            self.log("Could not unmount the network share holding the "
-                     "database. Details:", -1)
-            self.log_exception(e)
-            return False
+        msg = "TEARDOWN"
+        self.log(msg, 2)
         if thread_queue:
-            thread_queue.put(('Unmounted network share', self.progress_num))
+            thread_queue.put((msg, self.progress_num))
             self.progress_num += 1
-
-        self.log('Finished unmounting network share', 2)
         return True
 
     def _copydata(self, srcdir='mock'):
@@ -852,26 +537,6 @@ class DBSessionLogger:
             self._copydata()
             self.db_logger_teardown(thread_queue, exit_queue)
             return True
-
-
-def cmdline_args():
-    # Make parser object
-    p = argparse.ArgumentParser(
-        description="""This program will mount the nexuslims directory
-                       on CFS2E, connect to the nexuslims_db.sqlite
-                       database, and insert an entry into the session log.""",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    p.add_argument("event_type", type=str,
-                   help="the type of event")
-    p.add_argument("user", type=str, nargs='?',
-                   help="NIST username associated with this session (current "
-                        "windows logon name will be used if not provided)",
-                   default=None)
-    p.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2], default=0,
-                   help="increase output verbosity")
-
-    return p.parse_args()
 
 
 def gui_start_callback(config, verbosity=2):

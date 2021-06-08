@@ -6,6 +6,8 @@ import sys
 import tkinter as tk
 from collections import UserDict
 
+import requests
+
 from .db_logger_gui import MainApp, ScreenRes, check_singleton
 from .make_db_entry import DBSessionLogger
 
@@ -25,22 +27,22 @@ class _Config(UserDict):
 
 
 def validate_config(config):
-    keys_non_null = [
-        "database_name",
-        "database_relpath",
-        "networkdrive_hostname",
-        "daq_relpath",
-    ]
+    # `api_url`
+    api_url = config.get("api_url")
+    res = requests.get(api_url)
+    if res.status_code != 200 or res.text != "API for nexuslims-db":
+        raise ValueError("api_url `%s` is not responding" % api_url)
 
-    for k in keys_non_null:
-        if not config.get(k):
-            raise ValueError(f"Config is NOT valid: entry `{k}` is not present or Null.")
+    # `filestore_path`
+    # filestore_path = config.get("filestore_path")
+    # if not os.path.isdir(filestore_path):
+    #     raise ValueError("filestore_path `%s` does not exist" % filestore_path)
 
     return True
 
 
 def main():
-    ### check singleton
+    # check singleton
     try:
         sing = check_singleton()
     except OSError as e:
@@ -58,8 +60,7 @@ def main():
         tk.messagebox.showerror(parent=root, title="Error", message=message)
         sys.exit(0)
 
-
-    ### config
+    # config
     # The setting config will look for settings from environment variable first.
     # If not exist, it will read from `$HOME/nexuslims/gui/config.json` as fallback.
 
@@ -80,18 +81,23 @@ def main():
         tk.messagebox.showerror(parent=root, title="Error", message=str(e))
         sys.exit(0)
 
-    ### user
+    # user
     login = getpass.getuser()
 
-    ### logger window
-    dbdl = DBSessionLogger(config=config, user=login, verbosity=2)
+    # logger window
+    verbosity = 2
+    if len(sys.argv) > 1:
+        try:
+            verbosity = int(sys.argv[1])
+        except:
+            pass
+    dbdl = DBSessionLogger(config=config, user=login, verbosity=verbosity)
     sres = ScreenRes(dbdl)
 
-    ### main app
+    # main app
     root = MainApp(dbdl, screen_res=sres)
     root.protocol("WM_DELETE_WINDOW", root.on_closing)
     root.mainloop()
-
 
 
 if __name__ == "__main__":
