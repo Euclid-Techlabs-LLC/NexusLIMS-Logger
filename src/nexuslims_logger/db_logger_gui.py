@@ -1,12 +1,16 @@
+import io
+import logging
 import os
 import queue
 import sys
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from tkinter import *
 from tkinter import messagebox, ttk
 from uuid import uuid4
+
+from timeloop import Timeloop
 
 
 def check_singleton():
@@ -80,7 +84,7 @@ def format_date(dt, with_newline=True):
 
 
 class ScreenRes:
-    def __init__(self, db_logger):
+    def __init__(self, logger=None):
         """
         When an instance of this class is created, the screen is queried for its
         dimensions. This is done once, so as to limit the number of calls to
@@ -90,15 +94,16 @@ class ScreenRes:
         logged to the LogWindow
         """
         default_screen_dims = ('800', '600')
+        self.logger = logger or logging.getLogger("SCREEN")
         try:
             if sys.platform == 'win32':
                 cmd = 'wmic path Win32_VideoController get ' + \
                       'CurrentHorizontalResolution, CurrentVerticalResolution'
-                output = db_logger.run_cmd(cmd).split()[-2::]
+                output = self.run_cmd(cmd).split()[-2::]
                 # Tested working in Windows XP and Windows 7/10
                 screen_dims = tuple(map(int, output))
-                db_logger.log('(SCREENRES) Found "raw" Windows resolution '
-                              'of {}'.format(screen_dims), 2)
+                self.logger.debug('Found "raw" Windows resolution '
+                                  'of {}'.format(screen_dims))
 
                 # Get the DPI of the screen so we can adjust the resolution
                 cmd = r'reg query "HKCU\Control Panel\Desktop\WindowMetrics" ' \
@@ -106,17 +111,16 @@ class ScreenRes:
                 # pick off last value, which is DPI in hex, and convert to
                 # decimal:
                 dpi = 96
-                dpi = int(db_logger.run_cmd(cmd).split()[-1], 16)
+                dpi = int(self.run_cmd(cmd).split()[-1], 16)
                 scale_factor = dpi / 96
-                screen_dims = tuple(int(dim/scale_factor)
-                                    for dim in screen_dims)
-                db_logger.log("(SCREENRES) Found DPI of {}; ".format(dpi) +
-                              "Scale factor {}; Scaled ".format(scale_factor) +
-                              "resolution is {}".format(screen_dims), 2)
+                screen_dims = tuple(int(d / scale_factor) for d in screen_dims)
+                self.logger.debug("Found DPI of {}; ".format(dpi) +
+                                  "Scale factor {}; Scaled ".format(scale_factor) +
+                                  "resolution is {}".format(screen_dims))
                 temp_file = 'TempWmicBatchFile.bat'
                 if os.path.isfile(temp_file):
                     os.remove(temp_file)
-                    db_logger.log("(SCREENRES) Removed {}".format(temp_file), 2)
+                    self.logger.debug("Removed {}".format(temp_file))
 
             elif sys.platform == 'linux':
                 cmd = 'xrandr'
@@ -124,16 +128,15 @@ class ScreenRes:
                 result = re.search(r'primary (\d+)x(\d+)', screen_dims)
                 screen_dims = result.groups() if result else default_screen_dims
                 screen_dims = tuple(map(int, screen_dims))
-                db_logger.log('(SCREENRES) Found Linux resolution of '
-                              '{}'.format(screen_dims), 2)
+                self.logger.debug('Found Linux resolution of '
+                                  '{}'.format(screen_dims))
 
             else:
                 screen_dims = default_screen_dims
         except Exception as e:
-            db_logger.log("(SCREENRES) Caught exception when determining "
-                          "screen resolution: {}".format(e) + '\n' +
-                          " " * 34 + "Using default of "
-                          "{}".format(default_screen_dims), 0)
+            self.logger.warning("Caught exception when determining "
+                                "screen resolution: {}".format(e) + ' ' +
+                                "Using default of {}".format(default_screen_dims))
             screen_dims = default_screen_dims
         self.screen_dims = screen_dims
 
@@ -166,9 +169,48 @@ class ScreenRes:
                                            int(screen_height / 2 - height / 2))
         return geometry_string
 
+    def run_cmd(self, cmd):
+        """
+        Run a command using the subprocess module and return the output. Note
+        that because we want to run the eventual logger without a console
+        visible, we do not have access to the standard stdin, stdout,
+        and stderr, and these need to be redirected ``subprocess`` pipes,
+        accordingly.
+
+        Parameters
+        ----------
+        cmd : str
+            The command to run (will be run in a new Windows `cmd` shell).
+            ``stderr`` will be redirected for ``stdout`` and included in the
+            returned output
+
+        Returns
+        -------
+        output : str
+            The output of ``cmd``
+        """
+        try:
+            # Redirect stderr to stdout, and then stdout and stdin to
+            # subprocess.PIP
+            p = subprocess.Popen(cmd,
+                                 shell=True,
+                                 stderr=subprocess.STDOUT,
+                                 stdout=subprocess.PIPE,
+                                 stdin=subprocess.PIPE)
+            p.stdin.close()
+            p.wait()
+            output = p.stdout.read().decode()
+        except subprocess.CalledProcessError as e:
+            p = e.output.decode()
+            msg = "command %s returned with error (code %d): %s" % (
+                e.cmd, e.returncode, p)
+            self.logger.exception(msg)
+        return output
+
 
 class MainApp(Tk):
-    def __init__(self, db_logger, screen_res=None):
+    def __init__(self, db_logger, instrument, filewatcher,
+                 screen_res=None, logger=None, log_text=None):
         """
         This class configures and populates the main toplevel window. ``top`` is
         the toplevel containing window.
@@ -178,13 +220,27 @@ class MainApp(Tk):
         db_logger : make_db_entry.DBSessionLogger
             Instance of the database logger that actually does the
             communication with the database
+        instrument : instrument.Instrument
+            Instance of Instrument that can generate data.
+        filewatcher : filewatcher.FileWatcher
+            Instance of FileWatcher that will sync raw data to GCP
         screen_res : ScreenRes
             An instance of the screen resolution class to help determine where
             to place the window in the center of the screen
+        logger : logging.Logger
+        log_text : io.StringIO
+            stream of logs
         """
         super(MainApp, self).__init__()
+        self.logger = logger or logging.getLogger("GUI")
+        self.logger.info('Creating the session logger instance')
         self.db_logger = db_logger
-        self.db_logger.log('(GUI) Creating the session logger instance', 1)
+        self.instrument = instrument
+        self.filewatcher = filewatcher
+        self.timeloop = Timeloop()
+        self.timeloop.logger.setLevel(self.logger.getEffectiveLevel())
+        self.timeloop._add_job(self.filewatcher.upload,
+                               timedelta(seconds=self.filewatcher.interval))
         self.startup_thread_queue = queue.Queue()
         # a separate queue that will contain either nothing, or an instruction
         # to exit (from the GUI to the make_db_entry code)
@@ -193,8 +249,9 @@ class MainApp(Tk):
         self.end_thread_queue = queue.Queue()
         self.end_thread_exit_queue = queue.Queue()
         self.end_thread = None
+        self.log_text = log_text or io.StringIO()
 
-        self.screen_res = ScreenRes() if screen_res is None else screen_res
+        self.screen_res = screen_res or ScreenRes()
         self.style = ttk.Style()
         if sys.platform == "win32":
             self.style.theme_use('winnative')
@@ -342,14 +399,14 @@ class MainApp(Tk):
                                 font=('kDefaultFont', 12, 'bold'),
                                 relief=RAISED)
         self.copy_icon = PhotoImage(file=resource_path('copy.png'))
-        self.copydata_button = Button(self.button_frame,
-                                      text=" Copy Data ",
+        self.makedata_button = Button(self.button_frame,
+                                      text=" Make Data ",
                                       padx=10, pady=10,
                                       state=DISABLED,
                                       compound=LEFT,
-                                      command=self.db_logger.copydata,
+                                      command=self.instrument.generate_data,
                                       image=self.copy_icon)
-        self.copydata_button.config(fg='black',
+        self.makedata_button.config(fg='black',
                                     font=('kDefaultFont', 16, 'bold'),
                                     relief=RAISED)
 
@@ -367,12 +424,12 @@ class MainApp(Tk):
         self.end_button.grid(row=0, column=1, sticky=S, pady=5)
         self.log_button.grid(row=1, column=1, sticky=S, pady=5)
         self.note_button.grid(row=1, column=0, sticky=S, pady=5)
-        self.copydata_button.grid(row=0, column=0, sticky=S, pady=5)
+        self.makedata_button.grid(row=0, column=0, sticky=S, pady=5)
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
         self.setup_frame.rowconfigure(0, weight=1)
-        self.db_logger.log('(GUI) Created the top level window', 1)
+        self.logger.info('Created the top level window')
         self.session_startup()
 
     def session_startup(self):
@@ -384,6 +441,9 @@ class MainApp(Tk):
         self.after(100, self.watch_for_startup_result)
 
     def session_startup_worker(self):
+        # a flag to indicate `self.db_logger` started successfully
+        db_logger_start_success = False
+
         # each of these methods will return True if they succeed, and we only
         # want to continue with each one if the last ones succeeded
         if self.db_logger.db_logger_setup(
@@ -399,6 +459,7 @@ class MainApp(Tk):
                     self.db_logger.db_logger_teardown(
                         self.startup_thread_queue,
                         self.startup_thread_exit_queue)
+                    db_logger_start_success = True
             else:
                 # we got an inconsistent state from the DB, so ask user
                 # what to do about it
@@ -413,23 +474,22 @@ class MainApp(Tk):
                     # a new UUID4 and running process_start
                     self.loading_pbar_length = 8.0
                     self.db_logger.session_id = self.db_logger.last_session_id
-                    self.db_logger.log('Chose to start a new session; '
-                                       'ending the existing session with id '
-                                       '{}'.format(self.db_logger.session_id),
-                                       1)
+                    self.logger.info('Chose to start a new session; '
+                                     'ending the existing session with id '
+                                     '{}'.format(self.db_logger.session_id))
                     if self.db_logger.process_end(
                             self.startup_thread_queue,
                             self.startup_thread_exit_queue):
                         self.db_logger.session_id = str(uuid4())
-                        self.db_logger.log(
-                            'Starting a new session with new id '
-                            '{}'.format(self.db_logger.session_id), 1)
+                        self.logger.info('Starting a new session with new id '
+                                         '{}'.format(self.db_logger.session_id))
                         if self.db_logger.process_start(
                                 self.startup_thread_queue,
                                 self.startup_thread_exit_queue):
                             self.db_logger.db_logger_teardown(
                                 self.startup_thread_queue,
                                 self.startup_thread_exit_queue)
+                            db_logger_start_success = True
                 elif response == 'continue':
                     # we set the session_id to the one that was previously
                     # found (and set the time accordingly, and only run the
@@ -439,11 +499,10 @@ class MainApp(Tk):
                                                         'session for the')
                     self.running_Label_2.configure(text=' started at ')
                     self.db_logger.session_id = self.db_logger.last_session_id
-                    self.db_logger.log('Chose to continue the existing '
-                                       'session; setting the logger\'s '
-                                       'session_id to the existing value '
-                                       '{}'.format(self.db_logger.session_id),
-                                       1)
+                    self.logger.info('Chose to continue the existing '
+                                     'session; setting the logger\'s '
+                                     'session_id to the existing value '
+                                     '{}'.format(self.db_logger.session_id))
                     self.db_logger.session_started = True
                     self.db_logger.session_start_time = datetime.strptime(
                         self.db_logger.last_session_ts,
@@ -451,6 +510,13 @@ class MainApp(Tk):
                     self.db_logger.db_logger_teardown(
                         self.startup_thread_queue,
                         self.startup_thread_exit_queue)
+                    db_logger_start_success = True
+
+        if db_logger_start_success:
+            self.filewatcher.bucket_dir = self.db_logger.instr_pid
+            self.filewatcher.mtime_since = \
+                self.db_logger.session_start_time.timestamp()
+            self.timeloop.start()  # start syncing
 
     def watch_for_startup_result(self):
         """
@@ -506,7 +572,7 @@ class MainApp(Tk):
 
         # activate the "end session" button
         self.end_button.configure(state=ACTIVE)
-        self.copydata_button.configure(state=ACTIVE)
+        self.makedata_button.configure(state=ACTIVE)
 
     def switch_gui_to_end(self):
         # Remove the setup_frame contents
@@ -519,7 +585,7 @@ class MainApp(Tk):
         self.end_button.configure(state=DISABLED)
 
         # deactivate the "copy data" button
-        self.copydata_button.configure(state=DISABLED)
+        self.makedata_button.configure(state=DISABLED)
 
     def session_end(self):
         # signal the startup thread to exit (if it's still running)
@@ -534,7 +600,7 @@ class MainApp(Tk):
                                 icon='warning')
             self.destroy()
         else:
-            self.db_logger.log('(GUI) Starting session_end thread', 2)
+            self.logger.debug('Starting session_end thread')
             self.end_thread = threading.Thread(target=self.session_end_worker)
             self.end_thread.start()
             self.loading_Label.configure(text="Please wait while the session "
@@ -549,9 +615,12 @@ class MainApp(Tk):
 
     def session_end_worker(self):
         if self.db_logger.process_end(self.end_thread_queue,
-                                        self.end_thread_exit_queue):
+                                      self.end_thread_exit_queue):
             self.db_logger.db_logger_teardown(self.end_thread_queue,
-                                                self.end_thread_exit_queue)
+                                              self.end_thread_exit_queue)
+            self.timeloop.stop()
+            self.filewatcher.upload()
+            self.logger.debug("Data file uploaded.")
 
     def watch_for_end_result(self):
         """
@@ -584,19 +653,18 @@ class MainApp(Tk):
         resp = PauseOrEndDialogue(self,
                                   db_logger=self.db_logger,
                                   screen_res=self.screen_res).show()
-        self.db_logger.log('(GUI) User clicked on window manager close button; '
-                           'asking for clarification', 2)
+        self.logger.debug('User clicked on window manager close button; '
+                          'asking for clarification')
         if resp == 'end':
-            self.db_logger.log('(GUI) Received end session signal from '
-                               'PauseOrEndDialogue', 1)
+            self.logger.info('Received end session signal from '
+                             'PauseOrEndDialogue')
             self.session_end()
         elif resp == 'pause':
-            self.db_logger.log('(GUI) Received pause session signal from '
-                               'PauseOrEndDialogue', 1)
+            self.logger.info('Received pause session signal from '
+                             'PauseOrEndDialogue')
             self.destroy()
         elif resp == 'cancel':
-            self.db_logger.log('(GUI) User clicked Cancel in '
-                               'PauseOrEndDialogue', 1)
+            self.logger.info('User clicked Cancel in PauseOrEndDialogue')
             pass
 
 
@@ -615,8 +683,7 @@ class PauseOrEndDialogue(Toplevel):
 
         self.end_icon = PhotoImage(file=resource_path('window-close.png'))
         self.pause_icon = PhotoImage(file=resource_path('pause.png'))
-        self.cancel_icon = PhotoImage(file=resource_path('arrow-alt-'
-                                                         'circle-left.png'))
+        self.cancel_icon = PhotoImage(file=resource_path('arrow-alt-circle-left.png'))
         self.error_icon = PhotoImage(file=resource_path('error-icon.png'))
 
         self.top_frame = Frame(self)
@@ -740,7 +807,7 @@ class PauseOrEndDialogue(Toplevel):
 class HangingSessionDialog(Toplevel):
     def __init__(self, parent, db_logger, screen_res=None):
         self.response = StringVar()
-        self.screen_res = ScreenRes() if screen_res is None else screen_res
+        self.screen_res = parent.screen_res
         Toplevel.__init__(self, parent)
         self.geometry(self.screen_res.get_center_geometry_string(400, 250))
         self.grab_set()
@@ -777,7 +844,7 @@ class HangingSessionDialog(Toplevel):
         msg = "An interrupted session was found in the database for this " \
               "instrument (started on {}). ".format(last_session_timestring)
 
-        db_logger.log(msg, 0)
+        db_logger.logger.warning(msg)
 
         msg += "Would you like to continue that existing session, or end it " \
                "and start a new one?"
@@ -813,8 +880,7 @@ class HangingSessionDialog(Toplevel):
         self.top_label.grid(row=0, column=0, padx=10, pady=0, sticky=(W, S))
         self.warn_label.grid(row=1, column=0, padx=10, pady=(5, 0))
 
-        self.button_frame.grid(row=1, column=1,
-                               sticky=S, ipadx=10, ipady=5)
+        self.button_frame.grid(row=1, column=1, sticky=S, ipadx=10, ipady=5)
         self.continue_button.grid(row=0, column=0, sticky=E, padx=15)
         self.new_button.grid(row=0, column=1, sticky=W, padx=15)
         self.columnconfigure(0, weight=1)
@@ -874,12 +940,13 @@ class LogWindow(Toplevel):
         self.text.insert('1.0',
                          "----------------------------------------------------"
                          "\n"
-                         "If you encounter an error, please send the "
-                         "following\n"
-                         "log information to miclims@nist.gov for assistance \n"
+                         "If you encounter an error, please send the following"
+                         "\n"
+                         "log information to nexuslims developers for "
+                         "assistance \n"
                          "----------------------------------------------------"
                          "\n\n" +
-                         parent.db_logger.log_text)
+                         parent.log_text.getvalue())
 
         self.s_v = ttk.Scrollbar(self,
                                  orient=VERTICAL,
