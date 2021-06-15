@@ -270,6 +270,7 @@ class DBSessionLogger:
         msg = "`END` session log inserted into db"
         self.logger.info(msg)
         if thread_queue:
+            self.progress_num = 1
             thread_queue.put((msg, self.progress_num))
             self.progress_num += 1
 
@@ -387,6 +388,7 @@ class DBSessionLogger:
         self.logger.info(msg)
         self.logger.debug("Instrument info: %s" % str(data))
         if thread_queue:
+            self.progress_num = 1
             thread_queue.put((msg, self.progress_num))
             self.progress_num += 1
 
