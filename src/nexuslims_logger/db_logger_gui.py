@@ -260,10 +260,9 @@ class MainApp(tk.Tk):
             self.style.theme_use('winnative')
         self.style.configure('.', font=("TkDefaultFont"))
 
-        self.tooltip_font = "TkDefaultFont"
         self.info_font = 'TkDefaultFont 16 bold'
         self.geometry(self.screen_res.get_center_geometry_string(350, 600))
-        self.resizable(0, 0)
+        self.resizable(False, False)
         self.title("NexusLIMS Session Logger")
 
         # Set window icon
@@ -283,7 +282,8 @@ class MainApp(tk.Tk):
         self.logger.info("Session started.")
 
     def draw_logo(self):
-        # Top NexusLIMS logo with tooltip
+        """Top NexusLIMS logo with tooltip."""
+
         if os.path.isfile(resource_path("logo_text_250x100_version.png")):
             fname = resource_path("logo_text_250x100_version.png")
         else:
@@ -291,24 +291,24 @@ class MainApp(tk.Tk):
         self.logo_img = tk.PhotoImage(file=fname)
         self.logo_label = ttk.Label(self, image=self.logo_img)
         ToolTip(self.logo_label,
-                self.tooltip_font,
-                'Brought to you by the NIST Office of Data and Informatics '
-                'and the Electron Microscopy Nexus',
+                msg='Brought to you by the NIST Office of Data and Informatics '
+                    'and the Electron Microscopy Nexus',
                 header_msg='NexusLIMS',
                 delay=0.25)
 
         self.logo_label.grid(row=0, column=0, sticky=tk.N, pady=(15, 0))
 
     def draw_info(self):
+        """information section"""
+
         # Loading information that is hidden after session is established
         self.setup_frame = tk.Frame(self)
-        # self.setup_frame.rowconfigure(0, weight=1)
         self.loading_Label = ttk.Label(self.setup_frame,
                                        anchor='center',
                                        justify='center',
                                        wraplength="250",
                                        text="Please wait while the session is "
-                                       "established...")
+                                            "established...")
         self.loading_pbar = ttk.Progressbar(self.setup_frame,
                                             orient=tk.HORIZONTAL,
                                             length=200,
@@ -331,7 +331,7 @@ class MainApp(tk.Tk):
                                          justify='center',
                                          wraplength="250",
                                          text="A new session has been started "
-                                         "for the",
+                                              "for the",
                                          font=self.info_font)
         self.instr_string = tk.StringVar()
         self.instr_string.set("$INSTRUMENT")
@@ -346,7 +346,8 @@ class MainApp(tk.Tk):
                                          anchor='center',
                                          justify='center',
                                          wraplength="250",
-                                         text="at")
+                                         text="at",
+                                         font=self.info_font)
         self.datetime_string = tk.StringVar()
         self.datetime_string.set('$DATETIME')
         self.datetime_label = ttk.Label(self.running_frame,
@@ -362,9 +363,9 @@ class MainApp(tk.Tk):
                                          wraplength="250",
                                          foreground='#a30019',
                                          text="Leave this window open while you "
-                                         "work! Click `End session` button "
-                                         "below or close the window to end "
-                                         "the session.")
+                                              "work! Click `End session` button "
+                                              "below or close the window to end "
+                                              "the session.")
 
         # grid the setup_frame contents
         self.setup_frame.grid(row=1, column=0)
@@ -373,30 +374,29 @@ class MainApp(tk.Tk):
         self.loading_status_Label.grid(row=2, column=0)
 
     def draw_buttons(self):
-        # Buttons at bottom
+        """buttons at the bottom"""
+
         self.button_frame = tk.Frame(self, padx=15, pady=10, width=300)
 
         # "End session"
         self.end_icon = tk.PhotoImage(file=resource_path('window-close.png'))
         self.end_button = tk.Button(self.button_frame,
-                                    # takefocus="",
-                                    text="  End session  ",
+                                    text="End session",
                                     width=250,
-                                    padx=5, pady=5,
-                                    #  state=DISABLED,
+                                    padx=5,
+                                    pady=5,
+                                    state=tk.DISABLED,
                                     compound=tk.LEFT,
-                                    command=self.session_end,
+                                    command=lambda: self.session_end(),
+                                    font=('kDefaultFont', 14, 'bold'),
                                     image=self.end_icon)
-        self.end_button.config(fg='black',
-                               font=('kDefaultFont', 14, 'bold'),
-                               relief=tk.RAISED)
+
         ToolTip(self.end_button,
-                self.tooltip_font,
-                "Ending the session will close this window and start the record"
-                " building process (don't click unless you're sure you've "
-                "saved all your data to the network share!)",
+                msg="Ending the session will close this window and start the "
+                    "record building process (don't click unless you're sure "
+                    "you've saved all your data to the network share!)",
                 header_msg='Warning!',
-                delay=0.00)
+                delay=0.05)
 
         # "Show Debug Log"
         self.log_icon = tk.PhotoImage(file=resource_path('file.png'))
@@ -404,12 +404,13 @@ class MainApp(tk.Tk):
                                     text="Show Debug Log",
                                     command=lambda: LogWindow(parent=self),
                                     width=250,
-                                    padx=5, pady=5,
+                                    padx=5,
+                                    pady=5,
+                                    state=tk.DISABLED,
                                     compound=tk.LEFT,
+                                    font=('kDefaultFont', 14, 'bold'),
                                     image=self.log_icon)
-        self.log_button.config(fg='black',
-                               font=('kDefaultFont', 14, 'bold'),
-                               relief=tk.RAISED)
+        ToolTip(self.log_button, msg="Show debug log window.", delay=0.05)
 
         # "Add Session Note"
         self.note_icon = tk.PhotoImage(file=resource_path('note.png'))
@@ -417,26 +418,29 @@ class MainApp(tk.Tk):
                                      text="Add Session Note",
                                      command=lambda: NoteWindow(parent=self),
                                      width=250,
-                                     padx=5, pady=5,
+                                     padx=5,
+                                     pady=5,
+                                     state=tk.DISABLED,
                                      compound=tk.LEFT,
+                                     font=('kDefaultFont', 14, 'bold'),
                                      image=self.note_icon)
-        self.note_button.config(fg='black',
-                                font=('kDefaultFont', 14, 'bold'),
-                                relief=tk.RAISED)
+        ToolTip(self.note_button, msg="Add a session note.", delay=0.05)
 
         # "Make data"
         self.copy_icon = tk.PhotoImage(file=resource_path('copy.png'))
         self.makedata_button = tk.Button(self.button_frame,
                                          text="Make Data",
-                                         padx=5, pady=5,
+                                         padx=5,
+                                         pady=5,
                                          width=250,
-                                         #   state=DISABLED,
+                                         state=tk.DISABLED,
                                          compound=tk.LEFT,
-                                         command=self.instrument.generate_data,
+                                         command=lambda: self.instrument.generate_data(),
+                                         font=('kDefaultFont', 14, 'bold'),
                                          image=self.copy_icon)
-        self.makedata_button.config(fg='black',
-                                    font=('kDefaultFont', 14, 'bold'),
-                                    relief=tk.RAISED)
+        ToolTip(self.makedata_button,
+                msg="Pretend self as an instrument, making some data.",
+                delay=0.05)
 
         self.button_frame.grid(row=2, column=0, sticky=tk.S, pady=(0, 15))
         self.end_button.grid(row=0, column=0, sticky=tk.NSEW, pady=2)
@@ -445,6 +449,8 @@ class MainApp(tk.Tk):
         self.makedata_button.grid(row=3, column=0, sticky=tk.NSEW, pady=2)
 
     def create_widgets(self):
+        """draw widgets on main frame."""
+
         self.draw_logo()
         self.draw_info()
         self.draw_buttons()
@@ -480,11 +486,7 @@ class MainApp(tk.Tk):
             else:
                 # we got an inconsistent state from the DB, so ask user
                 # what to do about it
-                response = HangingSessionDialog(
-                    self,
-                    self.db_logger,
-                    screen_res=self.screen_res
-                ).show()
+                response = HangingSessionDialog(self, self.db_logger).show()
                 if response == 'new':
                     # we need to end the existing session that was found
                     # and then create a new one by changing the session_id to
@@ -536,9 +538,8 @@ class MainApp(tk.Tk):
             self.timeloop.start()  # start syncing
 
     def watch_for_startup_result(self):
-        """
-        Check if there is something in the queue
-        """
+        """Check if there is something in the queue."""
+
         try:
             res = self.startup_thread_queue.get(0)
             self.show_error_if_needed(res)
@@ -588,8 +589,10 @@ class MainApp(tk.Tk):
         self.running_Label_3.grid(row=4, pady=(0, 20))
 
         # activate the "end session" button
-        # self.end_button.configure(state=tk.ACTIVE)
-        # self.makedata_button.configure(state=tk.ACTIVE)
+        self.end_button.configure(state=tk.NORMAL)
+        self.log_button.configure(state=tk.NORMAL)
+        self.note_button.configure(state=tk.NORMAL)
+        self.makedata_button.configure(state=tk.NORMAL)
 
     def switch_gui_to_end(self):
         # Remove the setup_frame contents
@@ -598,16 +601,16 @@ class MainApp(tk.Tk):
         # grid the setup_frame contents again
         self.setup_frame.grid(row=1, column=0)
 
-        # deactivate the "end session" button
-        # self.end_button.configure(state=tk.DISABLED)
-
-        # deactivate the "make data" button
-        # self.makedata_button.configure(state=tk.DISABLED)
+        # disable the buttons
+        self.end_button.configure(state=tk.DISABLED)
+        self.log_button.configure(state=tk.DISABLED)
+        self.note_button.configure(state=tk.DISABLED)
+        self.makedata_button.configure(state=tk.DISABLED)
 
     def session_end(self):
         # signal the startup thread to exit (if it's still running)
         self.startup_thread_exit_queue.put(True)
-        # pass
+
         # do this in a separate end_thread (since it could take some time)
         if not self.db_logger.session_started:
             messagebox.showinfo("No session started",
@@ -637,12 +640,11 @@ class MainApp(tk.Tk):
                                               self.end_thread_exit_queue)
             self.timeloop.stop()
             self.filewatcher.upload()
-            self.logger.debug("Data file uploaded.")
+            self.logger.debug("Final sync finished.")
 
     def watch_for_end_result(self):
-        """
-        Check if there is something in the queue
-        """
+        """Check if there is something in the queue."""
+
         try:
             res = self.end_thread_queue.get(0)
             self.show_error_if_needed(res)
@@ -655,9 +657,6 @@ class MainApp(tk.Tk):
                 self.after(1000, self.destroy)
                 self.close_warning(1)
                 self.after(1000, lambda: self.close_warning(0))
-                # self.after(1000, lambda: self.close_warning(2))
-                # self.after(2000, lambda: self.close_warning(1))
-                # self.after(3000, lambda: self.close_warning(0))
             else:
                 self.after(100, self.watch_for_end_result)
         except queue.Empty:
@@ -681,15 +680,13 @@ class MainApp(tk.Tk):
             self.destroy()
         elif resp == 'cancel':
             self.logger.info('User clicked Cancel in PauseOrEndDialogue')
-            pass
 
 
 class PauseOrEndDialogue(tk.Toplevel):
     def __init__(self, parent, db_logger):
-        self.tooltip_font = "TkDefaultFont"
+        super(PauseOrEndDialogue, self).__init__(parent)
         self.response = tk.StringVar()
         self.screen_res = parent.screen_res
-        tk.Toplevel.__init__(self, parent)
         self.geometry(self.screen_res.get_center_geometry_string(480, 200))
         self.grab_set()
         self.title("Confirm exit")
@@ -780,23 +777,21 @@ class PauseOrEndDialogue(tk.Toplevel):
 
         if db_logger.session_started:
             ToolTip(self.end_button,
-                    self.tooltip_font,
-                    "Ending the session will close this window and start the "
-                    "record building process (don't click unless you're sure "
-                    "you've saved all your data to the network share!)",
+                    msg="Ending the session will close this window and start the "
+                        "record building process (don't click unless you're sure "
+                        "you've saved all your data to the network share!)",
                     header_msg='Warning!',
-                    delay=0.00)
+                    delay=0.05)
             ToolTip(self.pause_button,
-                    self.tooltip_font,
-                    "Pausing the session will leave the NexusLIMS database in "
-                    "an inconsistent state. Please only do this if you plan to "
-                    "immediately resume the session before another user uses "
-                    "the tool (such as if you need to reboot the computer). To "
-                    "resume the session, simply run this application again and "
-                    "you will be prompted whether to continue or start a new "
-                    "session.",
+                    msg="Pausing the session will leave the NexusLIMS database in "
+                        "an inconsistent state. Please only do this if you plan to "
+                        "immediately resume the session before another user uses "
+                        "the tool (such as if you need to reboot the computer). To "
+                        "resume the session, simply run this application again and "
+                        "you will be prompted whether to continue or start a new "
+                        "session.",
                     header_msg='Warning!',
-                    delay=0.00)
+                    delay=0.05)
 
         self.protocol("WM_DELETE_WINDOW", self.click_close)
 
@@ -823,10 +818,10 @@ class PauseOrEndDialogue(tk.Toplevel):
 
 
 class HangingSessionDialog(tk.Toplevel):
-    def __init__(self, parent, db_logger, screen_res=None):
+    def __init__(self, parent, db_logger):
+        super(HangingSessionDialog, self).__init__(parent)
         self.response = tk.StringVar()
         self.screen_res = parent.screen_res
-        tk.Toplevel.__init__(self, parent)
         self.geometry(self.screen_res.get_center_geometry_string(400, 250))
         self.grab_set()
         self.title("Incomplete session warning")
@@ -857,8 +852,7 @@ class HangingSessionDialog(tk.Toplevel):
                                    font=("TkDefaultFont", 14, "bold"),
                                    wraplength=250,
                                    anchor='w',
-                                   justify='left',
-                                   )
+                                   justify='left')
         msg = "An interrupted session was found in the database for this " \
               "instrument (started on {}). ".format(last_session_timestring)
 
@@ -876,19 +870,22 @@ class HangingSessionDialog(tk.Toplevel):
         self.error_icon_label = ttk.Label(self.top_frame,
                                           background=self['background'],
                                           foreground="#000000",
-                                          relief="flat",
                                           image=self.error_icon)
 
         self.continue_button = tk.Button(self.button_frame,
                                          text='Continue',
                                          command=self.click_continue,
-                                         padx=10, pady=5, width=80,
+                                         padx=10,
+                                         pady=5,
+                                         width=80,
                                          compound=tk.LEFT,
                                          image=self.continue_icon)
         self.new_button = tk.Button(self.button_frame,
                                     text='New session',
                                     command=self.click_new,
-                                    padx=10, pady=5, width=80,
+                                    padx=10,
+                                    pady=5,
+                                    width=80,
                                     compound=tk.LEFT,
                                     image=self.new_icon)
 
@@ -944,24 +941,26 @@ class LogWindow(tk.Toplevel):
         is_error : bool
             If True, closing the log window will close the whole application
         """
+        super(LogWindow, self).__init__(parent, padx=3, pady=3)
         self.screen_res = parent.screen_res
-        tk.Toplevel.__init__(self, padx=3, pady=3)
         self.transient(parent)
         self.grab_set()
-        self.tooltip_font = "TkDefaultFont"
         self.geometry(self.screen_res.get_center_geometry_string(450, 350))
         self.title('NexusLIMS Session Logger Log')
 
-        self.text_label = tk.Label(self, text="Session Debugging Log:",
-                                   padx=5, pady=5)
+        self.text_label = tk.Label(self,
+                                   text="Session Debugging Log:",
+                                   padx=5,
+                                   pady=5)
         self.text = tk.Text(self, width=40, height=10, wrap='none')
-        pre = '\n'.join([
-            '-' * 60,
-            "If you encounter an error, please send the following log",
-            "information to nexuslims developers for assistance.",
-            '-' * 60,
-        ])
-        self.text.insert('1.0', pre + "\n\n" + parent.log_text.getvalue())
+
+        msg = (
+            "--------------------------------------------------------\n"
+            "If you encounter an error, please send the following log\n"
+            "information to nexuslims developers for assistance.     \n"
+            "--------------------------------------------------------\n"
+        )
+        self.text.insert('1.0', msg + '\n' + parent.log_text.getvalue())
 
         self.s_v = ttk.Scrollbar(self,
                                  orient=tk.VERTICAL,
@@ -981,12 +980,15 @@ class LogWindow(tk.Toplevel):
 
         self.copy_button = tk.Button(self.button_frame,
                                      text='Copy',  # log to clipboard',
-                                     command=self.copy_text_to_clipboard,
-                                     padx=10, pady=5, width=60,
-                                     compound="left", image=self.copy_icon)
+                                     command=lambda: self.copy_text_to_clipboard(),
+                                     padx=10,
+                                     pady=5,
+                                     width=60,
+                                     compound="left",
+                                     image=self.copy_icon)
         ToolTip(self.copy_button,
-                self.tooltip_font,
-                "Copy log information to clipboard", delay=0.25)
+                msg="Copy log information to clipboard",
+                delay=0.25)
 
         def _close_cmd():
             """
@@ -1002,15 +1004,15 @@ class LogWindow(tk.Toplevel):
                                       _close_cmd,
                                       padx=10, pady=5, width=60,
                                       compound=tk.LEFT, image=self.close_icon)
+
         # Make close window button do same thing as regular close button
         self.protocol("WM_DELETE_WINDOW",
                       self.destroy if not is_error else lambda: sys.exit(1))
 
         ToolTip(self.close_button,
-                self.tooltip_font,
-                "Close this window" if not is_error else
-                "Close the application; make sure to copy the log if you "
-                "need!", delay=0.25)
+                msg="Close this window" if not is_error else
+                "Close the application; make sure to copy the log if you need!",
+                delay=0.25)
 
         self.text_label.grid(column=0, row=0, sticky=tk.SW)
         self.text.grid(column=0, row=1, sticky=tk.NSEW)
@@ -1024,11 +1026,9 @@ class LogWindow(tk.Toplevel):
         self.rowconfigure(1, weight=1)
         self.focus_force()
         if is_error:
-            time_left = 3
-            self.change_close_button(3, tk.DISABLED)
-            self.after(1000, lambda: self.change_close_button(2))
-            self.after(2000, lambda: self.change_close_button(1))
-            self.after(3000, lambda: self.change_close_button(0, tk.ACTIVE))
+            time_left = 1
+            self.change_close_button(1, tk.DISABLED)
+            self.after(1000, lambda: self.change_close_button(0, tk.ACTIVE))
 
     def change_close_button(self, num_to_show, state=tk.DISABLED):
         if num_to_show == 0:
@@ -1046,15 +1046,7 @@ class LogWindow(tk.Toplevel):
         if sys.platform == 'win32':
             text_content = text_content.replace('\n', '\r\n')
 
-        # put some text on clipboard
-        # https://stackoverflow.com/a/4203897
-        r = tk.Tk()
-        r.withdraw()
-        r.clipboard_clear()
-        r.clipboard_append(text_content)
-        r.update()
-        r.destroy()
-
+        self.clipboard_append(text_content)
         self.update()
 
 
@@ -1073,11 +1065,10 @@ class NoteWindow(tk.Toplevel):
         is_error : bool
             If True, closing the Note window will close the whole application
         """
+        super(NoteWindow, self).__init__(parent, padx=3, pady=3)
         self.screen_res = parent.screen_res
-        tk.Toplevel.__init__(self, padx=3, pady=3)
         self.transient(parent)
         self.grab_set()
-        self.tooltip_font = "TkDefaultFont"
         self.geometry(self.screen_res.get_center_geometry_string(450, 450))
         self.title('Add Note to the Current Session')
         self.parent = parent
@@ -1088,8 +1079,11 @@ class NoteWindow(tk.Toplevel):
         self.note = tk.StringVar()
         self.note.set(self.old_note)
 
-        self.session_note = tk.Text(self, width=40, height=10,
-                                    wrap='word', font=("TkDefaultFont", 16))
+        self.session_note = tk.Text(self,
+                                    width=40,
+                                    height=10,
+                                    wrap='word',
+                                    font=("TkDefaultFont", 14))
         self.s_v = ttk.Scrollbar(self,
                                  orient=tk.VERTICAL,
                                  command=self.session_note.yview)
@@ -1110,22 +1104,29 @@ class NoteWindow(tk.Toplevel):
 
         self.clear_button = tk.Button(self.button_frame,
                                       text='Clear',  # clear saved note',
-                                      command=self.delete_note,
-                                      padx=10, pady=5, width=60,
-                                      compound="left", image=self.clear_icon)
+                                      command=lambda: self.delete_note(),
+                                      padx=10,
+                                      pady=5,
+                                      width=60,
+                                      compound="left",
+                                      image=self.clear_icon)
 
         self.save_button = tk.Button(self.button_frame,
                                      text='Save',  # log to clipboard',
-                                     command=self.save_note,
-                                     padx=10, pady=5, width=60,
-                                     compound="left", image=self.save_icon)
+                                     command=lambda: self.save_note(),
+                                     padx=10,
+                                     pady=5,
+                                     width=60,
+                                     compound="left",
+                                     image=self.save_icon)
         ToolTip(self.save_button,
-                self.tooltip_font,
-                "Save session note before closing this window", delay=0.25)
+                msg="Save session note before closing this window",
+                delay=0.25)
 
         def _close_cmd():
-            """Fix for LogWindow preventing app from closing if there was an
-            error"""
+            """
+            Fix for LogWindow preventing app from closing if there was an error
+            """
             parent.notes = self.old_note
             self.destroy()
             parent.destroy()
@@ -1142,10 +1143,9 @@ class NoteWindow(tk.Toplevel):
                       self.destroy if not is_error else lambda: sys.exit(1))
 
         ToolTip(self.close_button,
-                self.tooltip_font,
-                "Close this window" if not is_error else
-                "Close the application; make sure to copy the log if you "
-                "need!", delay=0.25)
+                msg="Close this window" if not is_error else
+                "Close the application; make sure to copy the log if you need!",
+                delay=0.25)
 
         # self.text_label.grid(column=0, row=0, sticky=(S, W))
         self.session_note.grid(column=0, row=1, sticky=tk.NSEW)
@@ -1160,7 +1160,6 @@ class NoteWindow(tk.Toplevel):
         self.rowconfigure(1, weight=1)
         self.focus_force()
         if is_error:
-            time_left = 3
             self.change_close_button(1, tk.DISABLED)
             self.after(1000, lambda: self.change_close_button(0, tk.ACTIVE))
 
@@ -1169,7 +1168,7 @@ class NoteWindow(tk.Toplevel):
         self.note = self.session_note.get("1.0", tk.END)
         # escape single quote by doubling it so it won't cause issues with sql insert_statement
         self.note = self.note.replace("'", "''")
-        if not (self.note == self.old_note):
+        if self.note != self.old_note:
             self.old_note = self.note
             #self.parent.notes = self.note
             self.parent.db_logger.session_note = self.note
@@ -1192,15 +1191,7 @@ class NoteWindow(tk.Toplevel):
         if sys.platform == 'win32':
             text_content = text_content.replace('\n', '\r\n')
 
-        # put some text on clipboard
-        # https://stackoverflow.com/a/4203897
-        r = tk.Tk()
-        r.withdraw()
-        r.clipboard_clear()
-        r.clipboard_append(text_content)
-        r.update()
-        r.destroy()
-
+        self.clipboard_append(text_content)
         self.update()
 
 
@@ -1211,8 +1202,8 @@ class ToolTip(tk.Toplevel):
     ToolTip constructor
     """
 
-    def __init__(self, wdgt, tooltip_font, msg=None, msgFunc=None,
-                 header_msg=None, delay=1, follow=True):
+    def __init__(self, wdgt, tooltip_font="TkDefaultFont", msg=None,
+                 msgFunc=None, header_msg=None, delay=1, follow=True):
         """
         Initialize the ToolTip
 
