@@ -11,7 +11,7 @@ from collections import UserDict
 
 import requests
 
-from .db_logger_gui import MainApp, ScreenRes, check_singleton
+from .db_logger_gui import App, ScreenRes, check_singleton
 from .filewatcher import FileWatcher
 from .instrument import GCPInstrument
 from .make_db_entry import DBSessionLogger
@@ -48,6 +48,8 @@ def validate_config(config):
 
 def get_logger(name, verbose=logging.INFO, stream=None):
     logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+
     formatter = logging.Formatter(
         '[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s')
     ch = logging.StreamHandler(sys.stdout)
@@ -56,11 +58,21 @@ def get_logger(name, verbose=logging.INFO, stream=None):
     logger.addHandler(ch)
     if stream:
         st = logging.StreamHandler(stream)
-        st.setLevel(logging.NOTSET)
+        st.setLevel(logging.DEBUG)
         st.setFormatter(formatter)
         logger.addHandler(st)
-    logger.setLevel(verbose)
     return logger
+
+
+def help():
+    res = (
+        "OPTIONS:  (-s|v|vv|h)\n"
+        "   -s  silent\n"
+        "   -v  verbose\n"
+        "   -vv debug\n"
+        "   -h  help\n"
+    )
+    return res
 
 
 def main():
@@ -91,8 +103,13 @@ def main():
             verbosity = logging.INFO
         elif v == 'vv':
             verbosity = logging.DEBUG
-        elif v == 'vvv':
-            verbosity = logging.NOTSET
+        elif v == 'h':
+            print(help())
+            sys.exit(1)
+        else:
+            print("wrong option provided!")
+            print(help())
+            sys.exit(0)
 
     log_text = io.StringIO()
     _get_logger = functools.partial(get_logger,
@@ -153,13 +170,12 @@ def main():
                                  cache_fn=cache_json,
                                  logger=_get_logger("FW"))
 
-    # main app
-    root = MainApp(dbdl, instr, fw,
-                   screen_res=sres,
-                   logger=_get_logger("GUI"),
-                   log_text=log_text)
-    root.protocol("WM_DELETE_WINDOW", root.on_closing)
-    root.mainloop()
+    # app
+    app = App(dbdl, instr, fw,
+              screen_res=sres,
+              logger=_get_logger("GUI"),
+              log_text=log_text)
+    app.mainloop()
 
 
 if __name__ == "__main__":

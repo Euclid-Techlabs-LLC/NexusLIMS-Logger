@@ -209,7 +209,7 @@ class ScreenRes:
         return output
 
 
-class MainApp(tk.Tk):
+class App(tk.Tk):
     def __init__(self, db_logger, instrument, filewatcher,
                  screen_res=None, logger=None, log_text=None):
         """
@@ -232,7 +232,7 @@ class MainApp(tk.Tk):
         log_text : io.StringIO
             stream of logs
         """
-        super(MainApp, self).__init__()
+        super(App, self).__init__()
         self.logger = logger or logging.getLogger("GUI")
         self.logger.info('Creating the session logger instance')
 
@@ -251,7 +251,7 @@ class MainApp(tk.Tk):
         self.end_thread = None
 
         self.timeloop = Timeloop()
-        self.timeloop.logger.setLevel(self.logger.getEffectiveLevel())
+        self.timeloop.logger = self.logger
         self.timeloop._add_job(self.filewatcher.upload,
                                timedelta(seconds=self.filewatcher.interval))
 
@@ -264,6 +264,7 @@ class MainApp(tk.Tk):
         self.geometry(self.screen_res.get_center_geometry_string(350, 600))
         self.resizable(False, False)
         self.title("NexusLIMS Session Logger")
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # Set window icon
         self.icon = tk.PhotoImage(master=self, file=resource_path("logo_bare.png"))
@@ -895,7 +896,7 @@ class HangingSessionDialog(tk.Toplevel):
         self.top_label.grid(row=0, column=0, padx=10, pady=0, sticky=tk.SW)
         self.warn_label.grid(row=1, column=0, padx=10, pady=(5, 0))
 
-        self.button_frame.grid(row=1, column=1, sticky=tk.S, ipadx=10, ipady=5)
+        self.button_frame.grid(row=1, column=0, sticky=tk.S, ipadx=10, ipady=5)
         self.continue_button.grid(row=0, column=0, sticky=tk.E, padx=15)
         self.new_button.grid(row=0, column=1, sticky=tk.W, padx=15)
         self.columnconfigure(0, weight=1)
