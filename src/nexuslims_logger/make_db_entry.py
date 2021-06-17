@@ -31,14 +31,9 @@
 # pyinstaller 3.5 seems to work on the 642 Titan
 
 import logging
-import os
 import platform
 import queue
-import random
-import shutil
-import subprocess
 import sys
-from datetime import datetime, timedelta
 from urllib.parse import urljoin
 from uuid import uuid4
 

@@ -2,6 +2,8 @@ import io
 import logging
 import os
 import queue
+import re
+import subprocess
 import sys
 import threading
 import time
@@ -45,7 +47,7 @@ def tendo_singleton():
     from tendo import singleton
     try:
         me = singleton.SingleInstance()
-    except singleton.SingleInstanceException as e:
+    except singleton.SingleInstanceException:
         raise OSError('Only one instance of db_logger_gui allowed')
     return me
 
@@ -429,16 +431,18 @@ class App(tk.Tk):
 
         # "Make data"
         self.copy_icon = tk.PhotoImage(file=resource_path('copy.png'))
-        self.makedata_button = tk.Button(self.button_frame,
-                                         text="Make Data",
-                                         padx=5,
-                                         pady=5,
-                                         width=250,
-                                         state=tk.DISABLED,
-                                         compound=tk.LEFT,
-                                         command=lambda: self.instrument.generate_data(),
-                                         font=('kDefaultFont', 14, 'bold'),
-                                         image=self.copy_icon)
+        self.makedata_button = tk.Button(
+            self.button_frame,
+            text="Make Data",
+            padx=5,
+            pady=5,
+            width=250,
+            state=tk.DISABLED,
+            compound=tk.LEFT,
+            command=lambda: self.instrument.generate_data(),
+            font=('kDefaultFont', 14, 'bold'),
+            image=self.copy_icon
+        )
         ToolTip(self.makedata_button,
                 msg="Pretend self as an instrument, making some data.",
                 delay=0.05)
@@ -1027,7 +1031,6 @@ class LogWindow(tk.Toplevel):
         self.rowconfigure(1, weight=1)
         self.focus_force()
         if is_error:
-            time_left = 1
             self.change_close_button(1, tk.DISABLED)
             self.after(1000, lambda: self.change_close_button(0, tk.ACTIVE))
 
@@ -1167,11 +1170,12 @@ class NoteWindow(tk.Toplevel):
     def save_note(self):
         # Save the current session note in the text box, overwrite previous saved note
         self.note = self.session_note.get("1.0", tk.END)
-        # escape single quote by doubling it so it won't cause issues with sql insert_statement
+        # escape single quote by doubling it so it won't cause
+        # issues with sql insert_statement
         self.note = self.note.replace("'", "''")
         if self.note != self.old_note:
             self.old_note = self.note
-            #self.parent.notes = self.note
+            # self.parent.notes = self.note
             self.parent.db_logger.session_note = self.note
 
     def delete_note(self):
@@ -1313,7 +1317,7 @@ class ToolTip(tk.Toplevel):
             # the message if the message function is None or
             # the message function fails
             self.msgVar.set(self.msgFunc())
-        except:
+        except Exception:
             pass
         self.after(int(self.delay * 1000), self.show)
 
@@ -1330,8 +1334,8 @@ class ToolTip(tk.Toplevel):
 if __name__ == "__main__":
     try:
         sing = check_singleton()
-    except OSError as e:
-        root = Tk()
+    except OSError:
+        root = tk.Tk()
         root.title('Error')
         message = "Only one instance of the NexusLIMS " + \
                   "Session Logger can be run at one time. " + \

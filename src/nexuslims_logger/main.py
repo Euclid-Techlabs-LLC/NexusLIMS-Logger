@@ -78,8 +78,8 @@ def help():
 def main():
     # check singleton
     try:
-        sing = check_singleton()
-    except OSError as e:
+        check_singleton()
+    except OSError:
         root = tk.Tk()
         root.title('Error')
         message = "Only one instance of the NexusLIMS " + \
@@ -94,6 +94,7 @@ def main():
         tk.messagebox.showerror(parent=root, title="Error", message=message)
         sys.exit(0)
 
+    # options
     verbosity = logging.WARNING
     if len(sys.argv) > 1:
         v = sys.argv[1][1:]
@@ -117,18 +118,13 @@ def main():
                                     stream=log_text)
 
     logger = _get_logger("APP")
+
+    # config, credential, cache
     config_fn = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "config.json")
-    cred_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "creds.json")
-    cache_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "cache.json")
-
-    # config
-    # The setting config will look for settings from environment variable first.
-    # If not exist, it will read from `$HOME/nexuslims/gui/config.json` as fallback.
-
     config = _Config()
     try:
         config.update(json.load(open(config_fn)))
-    except:
+    except Exception:
         logger.warning("file `%s` cannot be found, use ENV variables instead.")
 
     try:
@@ -141,6 +137,7 @@ def main():
         sys.exit(0)
 
     # credential
+    cred_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "creds.json")
     if not os.path.exists(cred_json):
         msg = "Credential file `%s` cannot be found!" % cred_json
         root = tk.Tk()
@@ -150,6 +147,7 @@ def main():
         sys.exit(0)
 
     # cache
+    cache_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "cache.json")
     if not os.path.exists(cache_json):
         with open(cache_json, 'w') as f:
             f.write(json.dumps({}))
