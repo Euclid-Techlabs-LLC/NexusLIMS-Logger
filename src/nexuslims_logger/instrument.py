@@ -3,6 +3,8 @@
 It will connect to a mock data pool, randomly choose one and copy it to the
 specified output folder to mock a real instrument generating some data file.
 """
+__all__ = ["GCPInstrument"]
+
 import logging
 import os
 import random

@@ -6,15 +6,15 @@ import logging
 import os
 import pathlib
 import sys
-import tkinter as tk
 from collections import UserDict
 
 import requests
 
-from .db_logger_gui import App, ScreenRes, check_singleton
+from .dbsessionlogger import DBSessionLogger
 from .filewatcher import FileWatcher
+from .gui import App, ScreenRes
 from .instrument import GCPInstrument
-from .make_db_entry import DBSessionLogger
+from .utils import check_singleton, get_logger, show_error_msg_box
 
 
 class _Config(UserDict):
@@ -46,24 +46,6 @@ def validate_config(config):
     return True
 
 
-def get_logger(name, verbose=logging.INFO, stream=None):
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter(
-        '[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s')
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(verbose)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    if stream:
-        st = logging.StreamHandler(stream)
-        st.setLevel(logging.DEBUG)
-        st.setFormatter(formatter)
-        logger.addHandler(st)
-    return logger
-
-
 def help():
     res = (
         "OPTIONS:  (-s|v|vv|h)\n"
@@ -80,18 +62,10 @@ def main():
     try:
         check_singleton()
     except OSError:
-        root = tk.Tk()
-        root.title('Error')
-        message = "Only one instance of the NexusLIMS " + \
-                  "Session Logger can be run at one time. " + \
-                  "Please close the existing window if " + \
-                  "you would like to start a new session " \
-                  "and run the application again."
-        if sys.platform == 'win32':
-            message = message.replace('be run ', 'be run\n')
-            message = message.replace('like to ', 'like to\n')
-        root.withdraw()
-        tk.messagebox.showerror(parent=root, title="Error", message=message)
+        msg = ("Only one instance of the NexusLIMS Session Logger can be run at one time. "
+               "Please close the existing window if you would like to start a new session "
+               "and run the application again.")
+        show_error_msg_box(msg)
         sys.exit(0)
 
     # options
@@ -113,9 +87,7 @@ def main():
             sys.exit(0)
 
     log_text = io.StringIO()
-    _get_logger = functools.partial(get_logger,
-                                    verbose=verbosity,
-                                    stream=log_text)
+    _get_logger = functools.partial(get_logger, verbose=verbosity, stream=log_text)
 
     logger = _get_logger("APP")
 
@@ -130,20 +102,14 @@ def main():
     try:
         validate_config(config)
     except Exception as e:
-        root = tk.Tk()
-        root.title("Error")
-        root.withdraw()
-        tk.messagebox.showerror(parent=root, title="Error", message=str(e))
+        show_error_msg_box(str(e))
         sys.exit(0)
 
     # credential
     cred_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "creds.json")
     if not os.path.exists(cred_json):
         msg = "Credential file `%s` cannot be found!" % cred_json
-        root = tk.Tk()
-        root.title("Error")
-        root.withdraw()
-        tk.messagebox.showerror(parent=root, title="Error", message=msg)
+        show_error_msg_box(msg)
         sys.exit(0)
 
     # cache
@@ -156,7 +122,7 @@ def main():
     login = getpass.getuser()
 
     # logger window
-    dbdl = DBSessionLogger.from_config(config,
+    dbsl = DBSessionLogger.from_config(config,
                                        user=login,
                                        logger=_get_logger("DSL"))
     sres = ScreenRes(logger=_get_logger("SCREEN"))
@@ -169,7 +135,7 @@ def main():
                                  logger=_get_logger("FW"))
 
     # app
-    app = App(dbdl, instr, fw,
+    app = App(dbsl, instr, fw,
               screen_res=sres,
               logger=_get_logger("GUI"),
               log_text=log_text)

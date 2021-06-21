@@ -30,6 +30,8 @@
 # the Windows XP-based microscope PCs. Using this version of Python with
 # pyinstaller 3.5 seems to work on the 642 Titan
 
+__all__ = ["DBSessionLogger"]
+
 import logging
 import platform
 import queue

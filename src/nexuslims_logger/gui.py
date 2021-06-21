@@ -1,3 +1,6 @@
+"""GUI impl"""
+__all__ = ["ScreenRes", "App"]
+
 import io
 import logging
 import os
@@ -8,48 +11,12 @@ import sys
 import threading
 import time
 import tkinter as tk
+import tkinter.messagebox
 from datetime import datetime, timedelta
-from tkinter import messagebox, ttk
+from tkinter import ttk
 from uuid import uuid4
 
 from timeloop import Timeloop
-
-
-def check_singleton():
-    if sys.platform == 'win32':
-        if hasattr(sys, '_MEIPASS'):
-            # we're in a pyinstaller environment, so use psutil to check for exe
-            import psutil
-            db_logger_exe_count = 0
-            for proc in psutil.process_iter():
-                try:
-                    pinfo = proc.as_dict(attrs=['pid', 'name', 'username'])
-                    if pinfo['name'] == 'NexusLIMS Session Logger.exe':
-                        db_logger_exe_count += 1
-                except psutil.NoSuchProcess:
-                    pass
-                else:
-                    pass
-            # When running the pyinstaller .exe, two processes are spawned, so
-            # if we see more than that, we know there's already an instance
-            # running
-            if db_logger_exe_count > 2:
-                raise OSError('Only one instance of NexusLIMS Session Logger '
-                              'allowed')
-        else:
-            # we're not running as an .exe, so use tendo
-            return tendo_singleton()
-    else:
-        return tendo_singleton()
-
-
-def tendo_singleton():
-    from tendo import singleton
-    try:
-        me = singleton.SingleInstance()
-    except singleton.SingleInstanceException:
-        raise OSError('Only one instance of db_logger_gui allowed')
-    return me
 
 
 def resource_path(relative_path):
@@ -431,18 +398,16 @@ class App(tk.Tk):
 
         # "Make data"
         self.copy_icon = tk.PhotoImage(file=resource_path('copy.png'))
-        self.makedata_button = tk.Button(
-            self.button_frame,
-            text="Make Data",
-            padx=5,
-            pady=5,
-            width=250,
-            state=tk.DISABLED,
-            compound=tk.LEFT,
-            command=lambda: self.instrument.generate_data(),
-            font=('kDefaultFont', 14, 'bold'),
-            image=self.copy_icon
-        )
+        self.makedata_button = tk.Button(self.button_frame,
+                                         text="Make Data",
+                                         padx=5,
+                                         pady=5,
+                                         width=250,
+                                         state=tk.DISABLED,
+                                         compound=tk.LEFT,
+                                         command=lambda: self.instrument.generate_data(),
+                                         font=('kDefaultFont', 14, 'bold'),
+                                         image=self.copy_icon)
         ToolTip(self.makedata_button,
                 msg="Pretend self as an instrument, making some data.",
                 delay=0.05)
@@ -519,8 +484,7 @@ class App(tk.Tk):
                     # found (and set the time accordingly, and only run the
                     # teardown instead of process_start
                     self.loading_pbar_length = 1.0
-                    self.running_Label_1.configure(text='Continuing the last '
-                                                        'session for the')
+                    self.running_Label_1.configure(text='Continuing the last session for the')
                     self.running_Label_2.configure(text=' started at ')
                     self.db_logger.session_id = self.db_logger.last_session_id
                     self.logger.info('Chose to continue the existing '
@@ -573,11 +537,8 @@ class App(tk.Tk):
             st.configure("red.Horizontal.TProgressbar",
                          background='#990000')
             self.loading_pbar.configure(style="red.Horizontal.TProgressbar")
-            messagebox.showerror(parent=self,
-                                 title="Error",
-                                 message="Error encountered during "
-                                         "session setup: \n\n" +
-                                         str(res))
+            msg = "Error encountered during session setup: \n\n%s" % str(res)
+            tkinter.messagebox.showerror(parent=self, title="Error", message=msg)
             lw = LogWindow(parent=self, is_error=True)
             lw.mainloop()
 
@@ -618,20 +579,18 @@ class App(tk.Tk):
 
         # do this in a separate end_thread (since it could take some time)
         if not self.db_logger.session_started:
-            messagebox.showinfo("No session started",
-                                "A session was never started, so the logger "
-                                "will exit without sending a log to the "
-                                "database.",
-                                icon='warning')
+            msg = ("No session started\n"
+                   "A session was never started, so the logger "
+                   "will exit without sending a log to the database.")
+            tkinter.messagebox.showinfo(msg, icon='warning')
             self.destroy()
         else:
             self.logger.debug('Starting session_end thread')
             self.end_thread = threading.Thread(target=self.session_end_worker)
             self.end_thread.start()
-            self.loading_Label.configure(text="Please wait while the session "
-                                              "end is logged to the "
-                                              "database...\n(this window will "
-                                              "close when completed)")
+            msg = ("Please wait while the session end is logged to the database...\n"
+                   "(this window will close when completed)")
+            self.loading_Label.configure(text=msg)
             self.switch_gui_to_end()
             self.loading_pbar_length = 6.0
             self.loading_pbar['value'] = 0
@@ -837,15 +796,12 @@ class HangingSessionDialog(tk.Toplevel):
         if db_logger.last_session_ts is not None:
             last_session_dt = datetime.strptime(db_logger.last_session_ts,
                                                 "%a, %d %b %Y %H:%M:%S %Z")
-            last_session_timestring = format_date(last_session_dt,
-                                                  with_newline=False)
+            last_session_timestring = format_date(last_session_dt, with_newline=False)
         else:
             last_session_timestring = 'UNKNOWN'
 
         self.new_icon = tk.PhotoImage(file=resource_path('file-plus.png'))
-        self.continue_icon = tk.PhotoImage(
-            file=resource_path('arrow-alt-circle-right.png')
-        )
+        self.continue_icon = tk.PhotoImage(file=resource_path('arrow-alt-circle-right.png'))
         self.error_icon = tk.PhotoImage(file=resource_path('error-icon.png'))
 
         self.top_frame = tk.Frame(self)
@@ -927,10 +883,8 @@ class HangingSessionDialog(tk.Toplevel):
         self.destroy()
 
     def click_close(self):
-        messagebox.showerror(parent=self,
-                             title="Error",
-                             message="Please choose to either continue the "
-                                     "existing session or start a new one")
+        msg = "Please choose to either continue the existing session or start a new one."
+        tkinter.messagebox.showerror(parent=self, title="Error", message=msg)
 
 
 class LogWindow(tk.Toplevel):
@@ -1329,24 +1283,3 @@ class ToolTip(tk.Toplevel):
         """
         self.visible = 0
         self.withdraw()
-
-
-if __name__ == "__main__":
-    try:
-        sing = check_singleton()
-    except OSError:
-        root = tk.Tk()
-        root.title('Error')
-        message = "Only one instance of the NexusLIMS " + \
-                  "Session Logger can be run at one time. " + \
-                  "Please close the existing window if " + \
-                  "you would like to start a new session " \
-                  "and run the application again."
-        if sys.platform == 'win32':
-            message = message.replace('be run ', 'be run\n')
-            message = message.replace('like to ', 'like to\n')
-        root.withdraw()
-        messagebox.showerror(parent=root,
-                             title="Error",
-                             message=message)
-        sys.exit(0)

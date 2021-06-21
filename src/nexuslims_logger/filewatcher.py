@@ -4,6 +4,8 @@ It will upload any files (require file types match if specified) (modified after
 certain time if specified) that checksum changed wrt. cache (if any) to a GCP
 cloud bucket in a specified interval.
 """
+__all__ = ["FileWatcher"]
+
 import base64
 import hashlib
 import json
