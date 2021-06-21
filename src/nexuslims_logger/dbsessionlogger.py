@@ -322,6 +322,7 @@ class DBSessionLogger:
         url = urljoin(self.api_url, "/api/session")
         payload = {
             "id_session_log": last_start_id,
+            "record_status": "TO_BE_BUILT",
         }
         res = requests.put(url, data=payload)
         if res.status_code != 200:
