@@ -1,0 +1,29 @@
+nexuslims\_logger namespace
+===========================
+
+Submodules
+----------
+
+nexuslims\_logger.db\_logger\_gui module
+----------------------------------------
+
+.. automodule:: nexuslims_logger.db_logger_gui
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+nexuslims\_logger.main module
+-----------------------------
+
+.. automodule:: nexuslims_logger.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+nexuslims\_logger.make\_db\_entry module
+----------------------------------------
+
+.. automodule:: nexuslims_logger.make_db_entry
+   :members:
+   :undoc-members:
+   :show-inheritance:

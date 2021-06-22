@@ -1,0 +1,7 @@
+nexuslims_logger
+================
+
+.. toctree::
+   :maxdepth: 4
+
+   nexuslims_logger

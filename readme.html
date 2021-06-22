@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>NexusLIMS-Logger &#8212; nexuslims-logger  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="License" href="license.html" />
+    <link rel="prev" title="nexuslims-logger" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="nexuslims-logger">
+<span id="readme"></span><h1>NexusLIMS-Logger<a class="headerlink" href="#nexuslims-logger" title="Permalink to this headline">¶</a></h1>
+<p>Logger (TKinter) GUI branched off from original NexusLIMS repository.</p>
+<section id="run-in-command-line">
+<h2>Run in command line<a class="headerlink" href="#run-in-command-line" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Edit config file – <code class="docutils literal notranslate"><span class="pre">$HOME/nexuslims/gui/config.json</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">nexuslims_logger.main</span></code></p></li>
+</ol>
+</section>
+<section id="packaging-as-a-single-executable">
+<h2>Packaging as a single executable<a class="headerlink" href="#packaging-as-a-single-executable" title="Permalink to this headline">¶</a></h2>
+<p>Require <code class="docutils literal notranslate"><span class="pre">pyinstaller</span></code> installed. (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyinstaller</span></code>)</p>
+<p>(under <code class="docutils literal notranslate"><span class="pre">src/nexuslims_logger/</span></code>)</p>
+<p>On Windows PowerShell:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>pyinstaller -y -F -w `
+    -n &quot;NexusLIMS Session Logger&quot; `
+    -i &quot;resources\\logo_bare_xp.ico&quot; `
+    --add-data &quot;resources;resources&quot; main.py
+</pre></div>
+</div>
+<p>On MacOS:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pyinstaller</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">F</span> <span class="o">-</span><span class="n">w</span> \
+    <span class="o">-</span><span class="n">n</span> <span class="s2">&quot;NexusLIMS Session Logger&quot;</span> \
+    <span class="o">-</span><span class="n">i</span> <span class="s2">&quot;resources/logo_bare_xp.ico&quot;</span> \
+    <span class="o">--</span><span class="n">add</span><span class="o">-</span><span class="n">data</span> <span class="s2">&quot;resources:resources&quot;</span> <span class="n">main</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">nexuslims-logger</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#run-in-command-line">Run in command line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#packaging-as-a-single-executable">Packaging as a single executable</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">Module Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">nexuslims-logger</a></li>
+      <li>Next: <a href="license.html" title="next chapter">License</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Euclid Techlabs, NIST ODI.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/readme.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
