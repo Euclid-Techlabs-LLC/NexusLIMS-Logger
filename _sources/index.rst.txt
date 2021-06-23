@@ -1,8 +1,8 @@
 ================
-nexuslims-logger
+NexusLIMS-Logger
 ================
 
-This is the documentation of **nexuslims-logger**.
+This is the documentation of the **NexusLIMS-Logger GUI**.
 
 .. note::
 
