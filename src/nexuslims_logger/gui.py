@@ -187,7 +187,7 @@ class App(tk.Tk):
 
         Parameters
         ----------
-        db_logger : make_db_entry.DBSessionLogger
+        db_logger : dbsessionlogger.DBSessionLogger
             Instance of the database logger that actually does the
             communication with the database
         instrument : instrument.Instrument
@@ -501,7 +501,8 @@ class App(tk.Tk):
                     db_logger_start_success = True
 
         if db_logger_start_success:
-            self.filewatcher.bucket_dir = self.db_logger.instr_pid
+            self.filewatcher.bucket_dir = \
+                self.db_logger.instr_info.get("filestore_path", self.db_logger.instr_pid)
             self.filewatcher.mtime_since = \
                 self.db_logger.session_start_time.timestamp()
             self.timeloop.start()  # start syncing

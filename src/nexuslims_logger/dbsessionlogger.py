@@ -195,8 +195,8 @@ class DBSessionLogger:
             "session_note": self.session_note
         }
         res = requests.post(url, data=payload)
-        if res.status_code >= 500:
-            msg = "Error inserting `START` into DB. " + str(res.content)
+        if res.status_code != 200:
+            msg = "Error inserting `START` log into DB. " + str(res.content)
             self.logger.error(msg)
             if thread_queue:
                 thread_queue.put(Exception(msg))
