@@ -11,7 +11,7 @@ import hashlib
 import json
 import logging
 import os
-import time
+from datetime import datetime, timezone
 
 from google.cloud import storage
 
@@ -43,8 +43,7 @@ class FileWatcher:
         self.logger.info("FileWatcher initialized.")
         msg = "watching directory `%s` every %d seconds" % (watch_dir, interval)
         if mtime_since:
-            msg += " for files modified after %s" % time.strftime(
-                "%Y-%m-%d %H:%M:%S", time.localtime(mtime_since))
+            msg += " for files modified after %s" % datetime.fromtimestamp(mtime_since).isoformat()
         self.logger.debug(msg)
 
     @classmethod
@@ -65,8 +64,7 @@ class FileWatcher:
     @mtime_since.setter
     def mtime_since(self, t):
         self._mtime_since = t
-        msg = "only watch files modified after %s" % time.strftime(
-            "%Y-%m-%d %H:%M:%S", time.localtime(t))
+        msg = "only watch files modified after %s" % datetime.fromtimestamp(t).isoformat()
         self.logger.debug(msg)
 
     @property
@@ -115,7 +113,11 @@ class FileWatcher:
             relpath = os.path.relpath(f, self.watch_dir)
             bucket_path = os.path.join(self.bucket_dir, relpath)
 
+            ts = os.path.getmtime(f)
+            mtime = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+
             blob = self.bucket.blob(bucket_path)
+            blob.metadata = {"mtime": mtime}
             blob.upload_from_filename(f)
             self.cache[f] = md5
         with open(self.cache_fn, 'w') as f:
