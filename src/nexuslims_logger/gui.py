@@ -209,6 +209,7 @@ class App(tk.Tk):
         self.instrument = instrument
         self.filewatcher = filewatcher
         self.log_text = log_text or io.StringIO()
+        self.buttons = []
 
         self.screen_res = screen_res or ScreenRes()
 
@@ -360,6 +361,7 @@ class App(tk.Tk):
                                     command=lambda: self.session_end(),
                                     font=('kDefaultFont', 14, 'bold'),
                                     image=self.end_icon)
+        self.buttons.append(self.end_button)
 
         ToolTip(self.end_button,
                 msg="Ending the session will close this window and start the "
@@ -380,6 +382,7 @@ class App(tk.Tk):
                                     compound=tk.LEFT,
                                     font=('kDefaultFont', 14, 'bold'),
                                     image=self.log_icon)
+        self.buttons.append(self.log_button)
         ToolTip(self.log_button, msg="Show debug log window.", delay=0.05)
 
         # "Add Session Note"
@@ -394,6 +397,7 @@ class App(tk.Tk):
                                      compound=tk.LEFT,
                                      font=('kDefaultFont', 14, 'bold'),
                                      image=self.note_icon)
+        self.buttons.append(self.note_button)
         ToolTip(self.note_button, msg="Add a session note.", delay=0.05)
 
         # "Make data"
@@ -408,6 +412,7 @@ class App(tk.Tk):
                                          command=lambda: self.instrument.generate_data(),
                                          font=('kDefaultFont', 14, 'bold'),
                                          image=self.copy_icon)
+        self.buttons.append(self.makedata_button)
         ToolTip(self.makedata_button,
                 msg="Pretend self as an instrument, making some data.",
                 delay=0.05)
@@ -417,6 +422,14 @@ class App(tk.Tk):
         self.log_button.grid(row=1, column=0, sticky=tk.NSEW, pady=2)
         self.note_button.grid(row=2, column=0, sticky=tk.NSEW, pady=2)
         self.makedata_button.grid(row=3, column=0, sticky=tk.NSEW, pady=2)
+
+    def enable_buttons(self):
+        for btn in self.buttons:
+            btn.configure(state=tk.NORMAL)
+
+    def disable_buttons(self):
+        for btn in self.buttons:
+            btn.configure(state=tk.DISABLED)
 
     def create_widgets(self):
         """draw widgets on main frame."""
@@ -556,10 +569,7 @@ class App(tk.Tk):
         self.running_Label_3.grid(row=4, pady=(0, 20))
 
         # activate the "end session" button
-        self.end_button.configure(state=tk.NORMAL)
-        self.log_button.configure(state=tk.NORMAL)
-        self.note_button.configure(state=tk.NORMAL)
-        self.makedata_button.configure(state=tk.NORMAL)
+        self.enable_buttons()
 
     def switch_gui_to_end(self):
         # Remove the setup_frame contents
@@ -569,10 +579,7 @@ class App(tk.Tk):
         self.setup_frame.grid(row=1, column=0)
 
         # disable the buttons
-        self.end_button.configure(state=tk.DISABLED)
-        self.log_button.configure(state=tk.DISABLED)
-        self.note_button.configure(state=tk.DISABLED)
-        self.makedata_button.configure(state=tk.DISABLED)
+        self.disable_buttons()
 
     def session_end(self):
         # signal the startup thread to exit (if it's still running)
@@ -603,7 +610,10 @@ class App(tk.Tk):
                                       self.end_thread_exit_queue):
             self.db_logger.db_logger_teardown(self.end_thread_queue,
                                               self.end_thread_exit_queue)
-            self.timeloop.stop()
+            try:
+                self.timeloop.stop()
+            except RuntimeError:
+                pass
             self.filewatcher.upload()
             self.logger.debug("Final sync finished.")
 
@@ -651,12 +661,11 @@ class PauseOrEndDialogue(tk.Toplevel):
     def __init__(self, parent, db_logger):
         super(PauseOrEndDialogue, self).__init__(parent)
         self.response = tk.StringVar()
+        self.parent = parent
         self.screen_res = parent.screen_res
         self.geometry(self.screen_res.get_center_geometry_string(480, 200))
         self.grab_set()
         self.title("Confirm exit")
-        self.protocol("WM_DELETE_WINDOW", self.destroy)
-
         self.bell()
 
         self.end_icon = tk.PhotoImage(file=resource_path('window-close.png'))
@@ -759,6 +768,7 @@ class PauseOrEndDialogue(tk.Toplevel):
                     delay=0.05)
 
         self.protocol("WM_DELETE_WINDOW", self.click_close)
+        self.parent.disable_buttons()
 
     def show(self):
         self.wm_deiconify()
@@ -781,17 +791,20 @@ class PauseOrEndDialogue(tk.Toplevel):
     def click_close(self):
         self.click_cancel()
 
+    def destroy(self):
+        super(PauseOrEndDialogue, self).destroy()
+        self.parent.enable_buttons()
+
 
 class HangingSessionDialog(tk.Toplevel):
     def __init__(self, parent, db_logger):
         super(HangingSessionDialog, self).__init__(parent)
         self.response = tk.StringVar()
+        self.parent = parent
         self.screen_res = parent.screen_res
         self.geometry(self.screen_res.get_center_geometry_string(400, 250))
         self.grab_set()
         self.title("Incomplete session warning")
-        self.protocol("WM_DELETE_WINDOW", self.destroy)
-
         self.bell()
 
         if db_logger.last_session_ts is not None:
@@ -868,6 +881,7 @@ class HangingSessionDialog(tk.Toplevel):
         self.transient(parent)
 
         self.protocol("WM_DELETE_WINDOW", self.click_close)
+        self.parent.disable_buttons()
 
     def show(self):
         self.wm_deiconify()
@@ -886,6 +900,10 @@ class HangingSessionDialog(tk.Toplevel):
     def click_close(self):
         msg = "Please choose to either continue the existing session or start a new one."
         tkinter.messagebox.showerror(parent=self, title="Error", message=msg)
+
+    def destroy(self):
+        super().destroy()
+        self.parent.enable_buttons()
 
 
 class LogWindow(tk.Toplevel):
