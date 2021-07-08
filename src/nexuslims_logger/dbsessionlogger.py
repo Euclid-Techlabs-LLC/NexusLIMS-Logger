@@ -45,16 +45,23 @@ from dateutil.tz import tzlocal
 
 
 class DBSessionLogger:
-    def __init__(self, api_url, user=None, logger=None):
+    def __init__(self, dbapi_url,
+                 dbapi_username=None,
+                 dbapi_password=None,
+                 user=None,
+                 logger=None):
         """
         Parameters
         ----------
-        api_url : str
+        dbapi_url : str
+        dbapi_username : str
+        dbapi_password : str
         user : str
             The user to attach to this record
         logger : logging.Logger
         """
-        self.api_url = api_url
+        self.dbapi_url = dbapi_url
+        self.dbapi_auth = (dbapi_username, dbapi_password)
         self.user = user
         self.logger = logger or logging.getLogger("DSL")
 
@@ -77,7 +84,11 @@ class DBSessionLogger:
 
     @classmethod
     def from_config(cls, config, user=None, logger=None):
-        return cls(config["NEXUSLIMSGUI_DBAPI_URL"], user=user, logger=logger)
+        return cls(config["NEXUSLIMSGUI_DBAPI_URL"],
+                   dbapi_username=config["NEXUSLIMSGUI_DBAPI_USERNAME"],
+                   dbapi_password=config["NEXUSLIMSGUI_DBAPI_PASSWORD"],
+                   user=user,
+                   logger=logger)
 
     def check_exit_queue(self, thread_queue, exit_queue):
         """
@@ -135,8 +146,8 @@ class DBSessionLogger:
             return False
 
         self.check_exit_queue(thread_queue, exit_queue)
-        url = urljoin(self.api_url, "/api/lastsession")
-        res = requests.get(url, params={"instrument": self.instr_pid})
+        url = urljoin(self.dbapi_url, "/api/lastsession")
+        res = requests.get(url, params={"instrument": self.instr_pid}, auth=self.dbapi_auth)
 
         if res.status_code >= 500:
             msg = str(res.content)
@@ -186,7 +197,7 @@ class DBSessionLogger:
         """
         # Insert START log
         self.check_exit_queue(thread_queue, exit_queue)
-        url = urljoin(self.api_url, "/api/session")
+        url = urljoin(self.dbapi_url, "/api/session")
         payload = {
             "event_type": "START",
             "instrument": self.instr_pid,
@@ -194,7 +205,7 @@ class DBSessionLogger:
             "session_identifier": self.session_id,
             "session_note": self.session_note
         }
-        res = requests.post(url, data=payload)
+        res = requests.post(url, data=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error inserting `START` log into DB. " + str(res.content)
             self.logger.error(msg)
@@ -212,12 +223,12 @@ class DBSessionLogger:
 
         # verify insertion success by query db
         self.check_exit_queue(thread_queue, exit_queue)
-        url = urljoin(self.api_url, "/api/lastsession")
+        url = urljoin(self.dbapi_url, "/api/lastsession")
         payload = {
             "session_identifier": self.session_id,
             "event_type": "START",
         }
-        res = requests.get(url, params=payload)
+        res = requests.get(url, params=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error verifying that session was started. " + str(res.content)
             self.logger.error(msg)
@@ -247,7 +258,7 @@ class DBSessionLogger:
         """
         # Insert END log
         self.check_exit_queue(thread_queue, exit_queue)
-        url = urljoin(self.api_url, "/api/session")
+        url = urljoin(self.dbapi_url, "/api/session")
         payload = {
             "instrument": self.instr_pid,
             "event_type": "END",
@@ -256,7 +267,7 @@ class DBSessionLogger:
             "session_note": self.session_note,
             "user": self.user,
         }
-        res = requests.post(url, data=payload)
+        res = requests.post(url, data=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error inserting `END` log for session"
             self.logger.error(msg)
@@ -273,12 +284,12 @@ class DBSessionLogger:
 
         # verify insertion success by querying
         self.check_exit_queue(thread_queue, exit_queue)
-        url = urljoin(self.api_url, "/api/lastsession")
+        url = urljoin(self.dbapi_url, "/api/lastsession")
         payload = {
             "session_identifier": self.session_id,
             "event_type": "END",
         }
-        res = requests.get(url, params=payload)
+        res = requests.get(url, params=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error verifying that session was ended. " + str(res.content)
             self.logger.error(msg)
@@ -295,12 +306,12 @@ class DBSessionLogger:
 
         # Query matched last start
         self.check_exit_queue(thread_queue, exit_queue)
-        url = urljoin(self.api_url, "/api/lastsession")
+        url = urljoin(self.dbapi_url, "/api/lastsession")
         payload = {
             "session_identifier": self.session_id,
             "event_type": "START",
         }
-        res = requests.get(url, params=payload)
+        res = requests.get(url, params=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error getting matching `START` log. " + str(res.content)
             self.logger.error(msg)
@@ -319,12 +330,12 @@ class DBSessionLogger:
 
         # Update matched last start
         self.check_exit_queue(thread_queue, exit_queue)
-        url = urljoin(self.api_url, "/api/session")
+        url = urljoin(self.dbapi_url, "/api/session")
         payload = {
             "id_session_log": last_start_id,
             "record_status": "TO_BE_BUILT",
         }
-        res = requests.put(url, data=payload)
+        res = requests.put(url, data=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error updating matching `START` log's status. " + str(res.content)
             self.logger.error(msg)
@@ -340,7 +351,7 @@ class DBSessionLogger:
 
         # Verify update success by querying
         self.check_exit_queue(thread_queue, exit_queue)
-        res = requests.get(url, params=payload)
+        res = requests.get(url, params=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error updating matching `START` log's status. " + str(res.content)
             self.logger.error(msg)
@@ -369,11 +380,11 @@ class DBSessionLogger:
         self.logger.info("Session ID: %s" % self.session_id)
 
         self.check_exit_queue(thread_queue, exit_queue)
-        url = urljoin(self.api_url, "/api/instrument")
+        url = urljoin(self.dbapi_url, "/api/instrument")
         payload = {
             "computer_name": self.cpu_name,
         }
-        res = requests.get(url, params=payload)
+        res = requests.get(url, params=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error fetching instrument information from DB. " + str(res.content)
             self.logger.error(msg)
