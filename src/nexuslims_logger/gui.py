@@ -515,7 +515,8 @@ class App(tk.Tk):
 
         if db_logger_start_success:
             self.filewatcher.bucket_dir = \
-                self.db_logger.instr_info.get("filestore_path", self.db_logger.instr_pid)
+                self.db_logger.instr_info.get(
+                    "NEXUSLIMSGUI_FILESTORE_PATH", self.db_logger.instr_pid)
             self.filewatcher.mtime_since = \
                 self.db_logger.session_start_time.timestamp()
             self.timeloop.start()  # start syncing

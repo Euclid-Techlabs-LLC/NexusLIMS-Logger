@@ -1,8 +1,9 @@
 {
-    "api_url": "https://<API_URL>",
-
-    "filestore_path": "/path/to/raw/data/dir",
-    "filetypes_sync": [".dm3"],
-    "sync_interval_seconds": 600,
-    "gcp_bucket_name": "GCP_BUCKET_NAME"
+    "NEXUSLIMSGUI_DBAPI_URL": "https://<API_URL>",
+    "NEXUSLIMSGUI_FILESTORE_PATH": "/path/to/raw/data/dir",
+    "NEXUSLIMSGUI_FILETYPES_SYNC": [
+        ".dm3"
+    ],
+    "NEXUSLIMSGUI_SYNC_INTERVAL_SECONDS": 600,
+    "NEXUSLIMSGUI_DATA_BUCKET": "GCP_BUCKET_NAME"
 }

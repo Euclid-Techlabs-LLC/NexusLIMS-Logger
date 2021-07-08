@@ -77,7 +77,7 @@ class DBSessionLogger:
 
     @classmethod
     def from_config(cls, config, user=None, logger=None):
-        return cls(config["api_url"], user=user, logger=logger)
+        return cls(config["NEXUSLIMSGUI_DBAPI_URL"], user=user, logger=logger)
 
     def check_exit_queue(self, thread_queue, exit_queue):
         """

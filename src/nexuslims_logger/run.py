@@ -33,13 +33,13 @@ class _Config(UserDict):
 
 def validate_config(config):
     # `api_url`
-    api_url = config.get("api_url")
+    api_url = config.get("NEXUSLIMSGUI_DBAPI_URL")
     res = requests.get(api_url)
     if res.status_code != 200 or res.text != "API for nexuslims-db":
         raise ValueError("api_url `%s` is not responding" % api_url)
 
     # `filestore_path`
-    filestore_path = config.get("filestore_path")
+    filestore_path = config.get("NEXUSLIMSGUI_FILESTORE_PATH")
     if not os.path.isdir(filestore_path):
         raise ValueError("filestore_path `%s` does not exist" % filestore_path)
 

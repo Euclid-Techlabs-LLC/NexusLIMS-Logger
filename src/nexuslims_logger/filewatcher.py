@@ -48,13 +48,13 @@ class FileWatcher:
 
     @classmethod
     def from_config(cls, config, credential_fn, cache_fn, logger=None):
-        return cls(config["filestore_path"],
-                   config["gcp_bucket_name"],
+        return cls(config["NEXUSLIMSGUI_FILESTORE_PATH"],
+                   config["NEXUSLIMSGUI_DATA_BUCKET"],
                    "",
                    credential_fn,
                    cache_fn,
-                   interval=config["sync_interval_seconds"],
-                   file_types=config["filetypes_sync"],
+                   interval=config["NEXUSLIMSGUI_SYNC_INTERVAL_SECONDS"],
+                   file_types=config["NEXUSLIMSGUI_FILETYPES_SYNC"],
                    logger=logger)
 
     @property

@@ -55,8 +55,8 @@ class GCPInstrument(Instrument):
 
     @classmethod
     def from_config(cls, config, credential_fn, logger=None):
-        return cls(config["filestore_path"],
-                   config["gcp_bucket_name"],
+        return cls(config["NEXUSLIMSGUI_FILESTORE_PATH"],
+                   config["NEXUSLIMSGUI_DATA_BUCKET"],
                    "MockDataFiles",
                    credential_fn,
                    logger=logger)
