@@ -29,7 +29,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   Overview <readme>
+   Overview & Installation <readme>
+   Logger GUI <logger_gui>
    License <license>
    Authors <authors>
    Changelog <changelog>
