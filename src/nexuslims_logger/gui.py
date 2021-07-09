@@ -424,10 +424,12 @@ class App(tk.Tk):
         self.makedata_button.grid(row=3, column=0, sticky=tk.NSEW, pady=2)
 
     def enable_buttons(self):
+        """bring state of all buttons on main window to `NORMAL`"""
         for btn in self.buttons:
             btn.configure(state=tk.NORMAL)
 
     def disable_buttons(self):
+        """bring state of all buttons on main window to `DISABLED`"""
         for btn in self.buttons:
             btn.configure(state=tk.DISABLED)
 
@@ -608,14 +610,21 @@ class App(tk.Tk):
     def session_end_worker(self):
         if self.db_logger.process_end(self.end_thread_queue,
                                       self.end_thread_exit_queue):
-            self.db_logger.db_logger_teardown(self.end_thread_queue,
-                                              self.end_thread_exit_queue)
+
+            self.end_thread_queue.put(("stopping sync threads..",
+                                       self.db_logger.progress_num))
             try:
                 self.timeloop.stop()
             except RuntimeError:
                 pass
+
+            self.end_thread_queue.put(("final syncing.. (do not close)",
+                                       self.db_logger.progress_num))
             self.filewatcher.upload()
             self.logger.debug("Final sync finished.")
+
+            self.db_logger.db_logger_teardown(self.end_thread_queue,
+                                              self.end_thread_exit_queue)
 
     def watch_for_end_result(self):
         """Check if there is something in the queue."""
