@@ -10,12 +10,12 @@ NexusLIMS database. This document explains how this
 application is used, its design, what information it collects, and how it is
 deployed to the individual microscopes.
 
-How to use the logger app
+How to use the Logger GUI
 +++++++++++++++++++++++++
 
 Using the Logger GUI is very simple. The program can be run as an executable file or through a command line.  
-Directions for installing and configuring the Logger Gui can be found
-:doc:'here <readme>'. When the Logger Gui is started, there will be a short delay (about 5 seconds, depending on the instrument)
+Directions for installing and configuring the Logger GUI can be found
+:doc:`here <readme>`. When the Logger Gui is started, there will be a short delay (about 5 seconds, depending on the instrument)
 and a display window will appear on the user's screen, shown below.
 
 ..  figure:: _static/logger_icon_new.png
@@ -61,16 +61,16 @@ like to cancel closing the window, pause the session, or end the session.
     :alt: Session Logger pause session option
     :figclass: align-center
 
-Clicking on ``Pause Session`` will immediatly close the application without sending any further information 
+Clicking on ``Pause Session`` will immediatly close the Logger GUI without sending any further information 
 to the database.  The ``Pause Session`` button should only be clicked if the user plans to resume the session
 before another user would use the same instrument (i.e. they need to restart their computer). If an instrument session
 is paused but the ``End session`` button is never clicked, the next time the Logger GUI is run the user will be 
 prompted to confirm whether they want to continue the existing session or start a new one.
 
-Actions performed by the logger
-+++++++++++++++++++++++++++++++
+Actions performed by the Logger GUI
++++++++++++++++++++++++++++++++++++
 
-The NexusLIMS Session Logger performs a number of steps to record that an
+The NexusLIMS Logger GUI performs a number of steps to record that an
 Experiment has occurred, and keeps the progress bar up to date while it is
 operating. These steps are detailed below.
 
@@ -79,10 +79,10 @@ operating. These steps are detailed below.
 1. Mounting the network share
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The first action performed by the logger is to "ping" the central file server
+The first action performed by the Logger GUI is to "ping" the central file server
 where data is saved and the NexusLIMS database is stored. This action initiates when the 
 Logger Gui is opened. Based on the response, the logger stores the IP address of this server (to avoid problems
-with the DNS server). The logger then looks at the currently mounted drives on
+with the DNS server). The Logger GUI then looks at the currently mounted drives on
 the microscope computer and picks a drive letter that is not in use. With this
 information, the program runs a Windows command to mount the drive. When this
 action is completed, the Logger GUI confirms that the database file can be accessed,
@@ -91,7 +91,7 @@ and raises an error if not.
 2. Getting the instrument name
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Using the database file on the mounted drive, the logger application queries
+Using the database file on the mounted drive, the Logger GUI queries
 the ``instruments`` table in the database using the `"hostname"` of the current
 computer. In this way, a computer name gets mapped to an instrument persistent 
 identifier (PID) and this value is stored for later use. Directions for finding
@@ -105,7 +105,7 @@ and an error message will appear.
 3. Checking instrument status
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Before logging the start of a new Experiment, first the logger application
+Before logging the start of a new Experiment, first the Logger GUI
 checks to ensure that the most recent entry logged for this instrument was
 an ``'END'`` entry, meaning that the last session was marked as finished.
 For example, the code runs a query such as the following to get the most
@@ -123,8 +123,8 @@ normal state, and the application continues on as normal. If it is instead a
 ``'START'`` entry, then the application asks the user
 whether they want to continue the existing session found in the database, or
 start a new one (see the `interrupted session <interrupted_>`_ section for more
-details). If the user chooses to continue the existing session, the logger
-application notes the session identifier from the database for that session and
+details). If the user chooses to continue the existing session, the Logger
+GUI notes the session identifier from the database for that session and
 jumps to `step 6 <step-6_>`_.
 
 .. _step-4:
@@ -133,7 +133,7 @@ jumps to `step 6 <step-6_>`_.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 With the instrument PID known and a randomly generated identifier string, the
-logger runs a database insertion query on the ``session_log`` table to record
+Logger GUI runs a database insertion query on the ``session_log`` table to record
 that a session has been started. While not explicitly specified in the query,
 the current timestamp is also included in the insertion. As an example:
 
@@ -144,14 +144,14 @@ the current timestamp is also included in the insertion. As an example:
     VALUES ('Instrument ABC', 'START',
             'c9b774c9-4a59-4154-af05-0e2477e57cc4', 'local_user');
 
-After this has finished, the logger runs another query to verify that the row
+After this has finished, the Logger GUI runs another query to verify that the row
 was inserted into the database as expected, and raises an error if not.
 
 5. Unmounting the network share
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After the session start log has been added, the network share created in step 1
-is unmounted to clean up while the logger application waits for the next
+is unmounted to clean up while the Logger GUI waits for the next
 action. While the application is waiting, it simply sits idle until the
 `"End session"` button is pressed.
 
@@ -160,7 +160,7 @@ action. While the application is waiting, it simply sits idle until the
 6. Ending the session
 ^^^^^^^^^^^^^^^^^^^^^
 
-Once the user clicks the `"End session"` button, the logger application again
+Once the user clicks the `"End session"` button, the Logger GUI again
 mounts the network share (as in `step 1 <step-1_>`_) so it can communicate with
 the NexusLIMS database. Using the same `session identifier`
 value as before, the application inserts a corresponding ``'END'`` log into the
@@ -168,13 +168,13 @@ database using a query very similar to that in `step 4 <step-4_>`_.
 After verifying that this record was inserted correctly, the application
 then updates the status of both the ``'START'`` and ``'END'`` logs for this
 session from ``'WAITING_FOR_END'`` to ``'TO_BE_BUILT'``. This status indicates
-to the record builder that it should go ahead to
+to the `record builder <https://euclidtechlabs.github.io/nexuslims/record_building.html>`_, that it should go ahead to
 actually build and upload the record for this Experiment.
 
 7. Cleaning up
 ^^^^^^^^^^^^^^
 
-After updating the logs in the previous step, the logger application unmounts
+After updating the logs in the previous step, the Logger GUI unmounts
 the network share (as before), and if everything went according to plan,
 waits three seconds and then shuts itself down. At this point, it is ready
 to be run again by the next user that arrives to begin a new session.
@@ -183,7 +183,7 @@ Information collected
 +++++++++++++++++++++
 
 As described above and in the `database <https://euclidtechlabs.github.io/nexuslims/database.html>`_, the
-logger application collects the bare minimum amount of information required
+Logger GUI collects the bare minimum amount of information required
 to compile an Experiment's record. The values collected from the microscope
 computer that are recorded to the database with each log are:
 
