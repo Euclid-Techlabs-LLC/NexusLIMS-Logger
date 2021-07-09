@@ -220,11 +220,6 @@ class App(tk.Tk):
         self.end_thread_exit_queue = queue.Queue()
         self.end_thread = None
 
-        self.timeloop = Timeloop()
-        self.timeloop.logger = self.logger
-        self.timeloop._add_job(self.filewatcher.upload,
-                               timedelta(seconds=self.filewatcher.interval))
-
         self.style = ttk.Style()
         if sys.platform == "win32":
             self.style.theme_use('winnative')
@@ -251,6 +246,13 @@ class App(tk.Tk):
 
         self.session_startup()
         self.logger.info("Session started.")
+
+        self.timeloop = Timeloop()
+        self.timeloop.logger = self.logger
+        self.filewatcher.instr_info = self.db_logger.instr_info
+        self.timeloop._add_job(self.filewatcher.upload,
+                               timedelta(seconds=self.filewatcher.interval))
+        self.logger.info("Sync thread started.")
 
     def draw_logo(self):
         """Top NexusLIMS logo with tooltip."""

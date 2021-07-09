@@ -28,7 +28,7 @@ def calc_file_md5(filename):
 class FileWatcher:
     def __init__(self, watch_dir, bucket_name, bucket_dir, credential_fn,
                  cache_fn, interval=600, file_types=None, mtime_since=None,
-                 logger=None):
+                 instr_info=None, logger=None):
         self.watch_dir = watch_dir
         self._bucket_dir = bucket_dir
         self.client = storage.Client.from_service_account_json(credential_fn)
@@ -39,6 +39,7 @@ class FileWatcher:
         self.file_types = file_types
         self._mtime_since = mtime_since
         self._interval = interval
+        self._instr_info = instr_info or {}
         self.logger = logger or logging.getLogger("FW")
         self.logger.info("FileWatcher initialized.")
         msg = "watching directory `%s` every %d seconds" % (watch_dir, interval)
@@ -85,6 +86,15 @@ class FileWatcher:
         self._bucket_dir = d
         self.logger.debug("set GCP bucket: %s" % d)
 
+    @property
+    def instr_info(self):
+        return self._instr_info
+
+    @instr_info.setter
+    def instr_info(self, d):
+        self._instr_info = d
+        self.logger.debug("set instrument info")
+
     def get_files_to_upload(self):
         res = []
         for p, dirs, fs in os.walk(self.watch_dir):
@@ -117,7 +127,10 @@ class FileWatcher:
             mtime = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
 
             blob = self.bucket.blob(bucket_path)
-            blob.metadata = {"mtime": mtime}
+            blob.metadata = {
+                "mtime": mtime,
+                "instr_name": self._instr_info.get("schema_name")
+            }
             blob.upload_from_filename(f)
             self.cache[f] = md5
         with open(self.cache_fn, 'w') as f:
