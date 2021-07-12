@@ -247,13 +247,6 @@ class App(tk.Tk):
         self.session_startup()
         self.logger.info("Session started.")
 
-        self.timeloop = Timeloop()
-        self.timeloop.logger = self.logger
-        self.filewatcher.instr_info = self.db_logger.instr_info
-        self.timeloop._add_job(self.filewatcher.upload,
-                               timedelta(seconds=self.filewatcher.interval))
-        self.logger.info("Sync thread started.")
-
     def draw_logo(self):
         """Top NexusLIMS logo with tooltip."""
 
@@ -518,11 +511,17 @@ class App(tk.Tk):
                     db_logger_start_success = True
 
         if db_logger_start_success:
-            self.filewatcher.bucket_dir = \
-                self.db_logger.instr_info.get("filestore_path", self.db_logger.instr_pid)
-            self.filewatcher.mtime_since = \
-                self.db_logger.session_start_time.timestamp()
+            self.filewatcher.bucket_dir = self.db_logger.instr_info.get("filestore_path",
+                                                                        self.db_logger.instr_pid)
+            self.filewatcher.mtime_since = self.db_logger.session_start_time.timestamp()
+            self.filewatcher.instr_info = self.db_logger.instr_info
+
+            self.timeloop = Timeloop()
+            self.timeloop.logger = self.logger
+            self.timeloop._add_job(self.filewatcher.upload,
+                                   timedelta(seconds=self.filewatcher.interval))
             self.timeloop.start()  # start syncing
+            self.logger.info("Sync thread started.")
 
     def watch_for_startup_result(self):
         """Check if there is something in the queue."""

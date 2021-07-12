@@ -129,7 +129,7 @@ class FileWatcher:
             blob = self.bucket.blob(bucket_path)
             blob.metadata = {
                 "mtime": mtime,
-                "instr_name": self._instr_info.get("schema_name")
+                "instr_name": self.instr_info.get("schema_name")
             }
             blob.upload_from_filename(f)
             self.cache[f] = md5
