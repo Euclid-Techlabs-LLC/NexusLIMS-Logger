@@ -15,10 +15,10 @@ How to use the Logger GUI
 
 Using the Logger GUI is very simple. The program can be run as an executable file or through a command line.  
 Directions for installing and configuring the Logger GUI can be found
-:doc:`here <readme>`. When the Logger Gui is started, there will be a short delay (about 5 seconds, depending on the instrument)
+:doc:`here <readme>`. When the Logger GUI is started, there will be a short delay (about 5 seconds, depending on the instrument)
 and a display window will appear on the user's screen, shown below.
 
-..  figure:: _static/logger_icon_new.png
+..  figure:: _static/logger_icon_new.PNG
     :width: 25%
     :align: center
     :alt: Session Logger application shortcut icon

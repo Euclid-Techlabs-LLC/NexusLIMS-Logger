@@ -31,6 +31,7 @@ Contents
 
    Overview & Installation <readme>
    Logger GUI <logger_gui>
+   Administrator Documentation <admin_doc>
    License <license>
    Authors <authors>
    Changelog <changelog>

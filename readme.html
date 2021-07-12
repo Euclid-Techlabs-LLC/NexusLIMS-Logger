@@ -41,7 +41,7 @@
 </pre></div>
 </div>
 <p>The default <code class="docutils literal notranslate"><span class="pre">$HOME</span></code> directory is unique for different operating systems.  A discription of
-the default $HOME directories for Linux, MacOS, and Windows can be found <a class="reference external" href="https://en.wikipedia.org/wiki/Home_directory">here</a>.
+the default <code class="docutils literal notranslate"><span class="pre">$HOME</span></code> directories for Linux, MacOS, and Windows can be found <a class="reference external" href="https://en.wikipedia.org/wiki/Home_directory">here</a>.
 The <code class="docutils literal notranslate"><span class="pre">config.json</span></code> file contains information about the user that is required by the Logger GUI
 to store data.  The required information is as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -59,7 +59,7 @@ to store data.  The required information is as follows:</p>
 in the above example. <code class="docutils literal notranslate"><span class="pre">networkdrive_workgroup</span></code> and <code class="docutils literal notranslate"><span class="pre">networkdrive_password</span></code> are not required entities when the Logger GUI
 is installed but they can be configfured by administrators to be required. The <code class="docutils literal notranslate"><span class="pre">networkdrive_username</span></code> entity
 must be filled in prior to running the Logger GUI or the program will not run.</p>
-<p>There are two methods to run the Logger GUI; through a command line or as an executable file</p>
+<p>There are two methods to run the Logger GUI: through a command line or as an executable file</p>
 <section id="run-in-command-line">
 <h2>Run in command line<a class="headerlink" href="#run-in-command-line" title="Permalink to this headline">¶</a></h2>
 <p>To run the Logger GUI in the command line, clone the NexusLIMS-Logger repository to your local drive:</p>
@@ -121,6 +121,7 @@ must be filled in prior to running the Logger GUI or the program will not run.</
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="logger_gui.html">Logger GUI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="admin_doc.html">Administrator Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
 <li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
@@ -140,7 +141,7 @@ must be filled in prior to running the Logger GUI or the program will not run.</
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -162,7 +163,7 @@ must be filled in prior to running the Logger GUI or the program will not run.</
       &copy;2021, Euclid Techlabs, NIST ODI.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

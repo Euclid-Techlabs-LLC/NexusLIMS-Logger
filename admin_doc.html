@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Administrator Documentation &#8212; NexusLIMS-Logger  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="License" href="license.html" />
+    <link rel="prev" title="Session Logging" href="logger_gui.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="administrator-documentation">
+<h1>Administrator Documentation<a class="headerlink" href="#administrator-documentation" title="Permalink to this headline">¶</a></h1>
+<p>This document is meant for administrators to understand how to properly configure the Logger GUI
+and NexusLIMS back-end for users.</p>
+<section id="cloning-the-nexuslims-repository">
+<h2>Cloning the NexusLIMS repository<a class="headerlink" href="#cloning-the-nexuslims-repository" title="Permalink to this headline">¶</a></h2>
+<p>All administrators need to clone the NexusLIMS Github repository on a computer that is connected to the
+central file server where measurement data is to be saved.  This can be done by either forking the NexusLIMS
+repository to your own account, or directly cloning the NexusLIMS repository to your local drive, shown below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">euclidtechlabs</span><span class="o">/</span><span class="n">nexuslims</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+</section>
+<section id="locating-the-instruments-table">
+<h2>Locating the Instruments Table<a class="headerlink" href="#locating-the-instruments-table" title="Permalink to this headline">¶</a></h2>
+<p>The information to be inputted into the Instruments table is in a csv file named <code class="docutils literal notranslate"><span class="pre">instruments.csv</span></code> located
+in the directory <code class="docutils literal notranslate"><span class="pre">\GitHub\nexuslims\scripts\instruments.csv</span></code>.  Each row in the instruments.csv file
+corrosponds to a different user and each column corrosponds to a different entry.  Starting from left to
+right, the Instrument table entries are as follows: <code class="docutils literal notranslate"><span class="pre">instrument_pid</span></code>, <code class="docutils literal notranslate"><span class="pre">api_url</span></code>, <code class="docutils literal notranslate"><span class="pre">calendar_name</span></code>,
+<code class="docutils literal notranslate"><span class="pre">calendar_url</span></code>, <code class="docutils literal notranslate"><span class="pre">location</span></code>, <code class="docutils literal notranslate"><span class="pre">schema_name</span></code>, <code class="docutils literal notranslate"><span class="pre">property_tag</span></code>, <code class="docutils literal notranslate"><span class="pre">filestore_path</span></code>, <code class="docutils literal notranslate"><span class="pre">computer_name</span></code>,
+<code class="docutils literal notranslate"><span class="pre">computer_ip</span></code>, and <code class="docutils literal notranslate"><span class="pre">computer_mount</span></code>.  More information on the Instrument table entries can be found
+<a class="reference external" href="https://euclidtechlabs.github.io/nexuslims/database.html">here</a>.</p>
+</section>
+<section id="configuring-the-instruments-table">
+<h2>Configuring the Instruments Table<a class="headerlink" href="#configuring-the-instruments-table" title="Permalink to this headline">¶</a></h2>
+<p>In order for users to run the Logger GUI, some user information must be loaded into the Instruments table
+located in the NexusLIMS database prior to using the Logger GUI. More information on the Instruments table
+can be found <a class="reference external" href="https://euclidtechlabs.github.io/nexuslims/database.html">here</a>. While some entries in the
+Instruments table are not required by the Logger GUI to run, entries such as <code class="docutils literal notranslate"><span class="pre">computer_name</span></code>,
+<code class="docutils literal notranslate"><span class="pre">filestore_path</span></code>, and <code class="docutils literal notranslate"><span class="pre">instrument_pid</span></code> must conform to strict guidlines for the Logger GUI to operate.
+The <code class="docutils literal notranslate"><span class="pre">instrument_pid</span></code> is a unique instrument identifier used by the Logger GUI and cannot match the
+<code class="docutils literal notranslate"><span class="pre">instrument_pid</span></code> of any other users. The <code class="docutils literal notranslate"><span class="pre">computer_name</span></code> corrosponds to the hostname of the support PC
+connected to the instrument that runs the Logger GUI.  If the <code class="docutils literal notranslate"><span class="pre">computer_name</span></code> in the Instruments table
+does not match the hostname of the user’s computer, the Logger GUI will display an error. Information on
+finding your computer hostname can be found <a class="reference external" href="https://drexel.edu/it/help/a-z/computer-names/#:~:text=computer%20name%20listed.-,Windows%2010,find%20the%20computer%20name%20listed.">here</a>.
+The <code class="docutils literal notranslate"><span class="pre">filestore_path</span></code> corrosponds to the central file storage where the instrument stores its data, and
+should be entered as <code class="docutils literal notranslate"><span class="pre">./</span></code> + <code class="docutils literal notranslate"><span class="pre">hostname</span></code> of the instrument computer. For example, if the dedicated computer’s
+host name is DESKTOP-12345, the <code class="docutils literal notranslate"><span class="pre">filestore_path</span></code> would be <code class="docutils literal notranslate"><span class="pre">./DESKTOP-12345</span></code>.</p>
+</section>
+<section id="building-the-instruments-table">
+<h2>Building the Instruments Table<a class="headerlink" href="#building-the-instruments-table" title="Permalink to this headline">¶</a></h2>
+<p>When all the necessary user information has been inserted into the instruments.csv file, a step must be
+taken to convert the .csv file into a .db database table.  Running the Python script <code class="docutils literal notranslate"><span class="pre">create_db.py</span></code>
+(located at <code class="docutils literal notranslate"><span class="pre">\Github\nexuslims\scripts\create_db</span></code>) will input the instruments.csv data into a table contained
+in the NexusLIMS database.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NexusLIMS-Logger</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Overview &amp; Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logger_gui.html">Logger GUI</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Administrator Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#cloning-the-nexuslims-repository">Cloning the NexusLIMS repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#locating-the-instruments-table">Locating the Instruments Table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuring-the-instruments-table">Configuring the Instruments Table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-the-instruments-table">Building the Instruments Table</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">Module Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="logger_gui.html" title="previous chapter">Session Logging</a></li>
+      <li>Next: <a href="license.html" title="next chapter">License</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Euclid Techlabs, NIST ODI.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/admin_doc.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
