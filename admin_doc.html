@@ -36,12 +36,13 @@
   <section id="administrator-documentation">
 <h1>Administrator Documentation<a class="headerlink" href="#administrator-documentation" title="Permalink to this headline">¶</a></h1>
 <p>This document is meant for administrators to understand how to properly configure the Logger GUI
-and NexusLIMS back-end for users.</p>
-<section id="cloning-the-nexuslims-repository">
-<h2>Cloning the NexusLIMS repository<a class="headerlink" href="#cloning-the-nexuslims-repository" title="Permalink to this headline">¶</a></h2>
+and NexusLIMS back end for users.</p>
+<section id="cloning-the-nexuslims-back-end">
+<h2>Cloning the NexusLIMS Back End<a class="headerlink" href="#cloning-the-nexuslims-back-end" title="Permalink to this headline">¶</a></h2>
 <p>All administrators need to clone the NexusLIMS Github repository on a computer that is connected to the
 central file server where measurement data is to be saved.  This can be done by either forking the NexusLIMS
-repository to your own account, or directly cloning the NexusLIMS repository to your local drive, shown below:</p>
+repository to your own account, or directly cloning the NexusLIMS repository to your local drive using the Git bash
+command shown below:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">euclidtechlabs</span><span class="o">/</span><span class="n">nexuslims</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
 </div>
@@ -49,18 +50,17 @@ repository to your own account, or directly cloning the NexusLIMS repository to 
 <section id="locating-the-instruments-table">
 <h2>Locating the Instruments Table<a class="headerlink" href="#locating-the-instruments-table" title="Permalink to this headline">¶</a></h2>
 <p>The information to be inputted into the Instruments table is in a csv file named <code class="docutils literal notranslate"><span class="pre">instruments.csv</span></code> located
-in the directory <code class="docutils literal notranslate"><span class="pre">\GitHub\nexuslims\scripts\instruments.csv</span></code>.  Each row in the instruments.csv file
+in the directory <code class="docutils literal notranslate"><span class="pre">/path_to_repository/nexuslims/scripts/instruments.csv</span></code>.  Each row in the instruments.csv file
 corrosponds to a different user and each column corrosponds to a different entry.  Starting from left to
 right, the Instrument table entries are as follows: <code class="docutils literal notranslate"><span class="pre">instrument_pid</span></code>, <code class="docutils literal notranslate"><span class="pre">api_url</span></code>, <code class="docutils literal notranslate"><span class="pre">calendar_name</span></code>,
 <code class="docutils literal notranslate"><span class="pre">calendar_url</span></code>, <code class="docutils literal notranslate"><span class="pre">location</span></code>, <code class="docutils literal notranslate"><span class="pre">schema_name</span></code>, <code class="docutils literal notranslate"><span class="pre">property_tag</span></code>, <code class="docutils literal notranslate"><span class="pre">filestore_path</span></code>, <code class="docutils literal notranslate"><span class="pre">computer_name</span></code>,
-<code class="docutils literal notranslate"><span class="pre">computer_ip</span></code>, and <code class="docutils literal notranslate"><span class="pre">computer_mount</span></code>.  More information on the Instrument table entries can be found
+<code class="docutils literal notranslate"><span class="pre">computer_ip</span></code>, and <code class="docutils literal notranslate"><span class="pre">computer_mount</span></code>.  More information on the Instruments table entries can be found
 <a class="reference external" href="https://euclidtechlabs.github.io/nexuslims/database.html">here</a>.</p>
 </section>
 <section id="configuring-the-instruments-table">
 <h2>Configuring the Instruments Table<a class="headerlink" href="#configuring-the-instruments-table" title="Permalink to this headline">¶</a></h2>
 <p>In order for users to run the Logger GUI, some user information must be loaded into the Instruments table
-located in the NexusLIMS database prior to using the Logger GUI. More information on the Instruments table
-can be found <a class="reference external" href="https://euclidtechlabs.github.io/nexuslims/database.html">here</a>. While some entries in the
+located in the NexusLIMS database prior to using the Logger GUI. While some entries in the
 Instruments table are not required by the Logger GUI to run, entries such as <code class="docutils literal notranslate"><span class="pre">computer_name</span></code>,
 <code class="docutils literal notranslate"><span class="pre">filestore_path</span></code>, and <code class="docutils literal notranslate"><span class="pre">instrument_pid</span></code> must conform to strict guidlines for the Logger GUI to operate.
 The <code class="docutils literal notranslate"><span class="pre">instrument_pid</span></code> is a unique instrument identifier used by the Logger GUI and cannot match the
@@ -76,7 +76,7 @@ host name is DESKTOP-12345, the <code class="docutils literal notranslate"><span
 <h2>Building the Instruments Table<a class="headerlink" href="#building-the-instruments-table" title="Permalink to this headline">¶</a></h2>
 <p>When all the necessary user information has been inserted into the instruments.csv file, a step must be
 taken to convert the .csv file into a .db database table.  Running the Python script <code class="docutils literal notranslate"><span class="pre">create_db.py</span></code>
-(located at <code class="docutils literal notranslate"><span class="pre">\Github\nexuslims\scripts\create_db</span></code>) will input the instruments.csv data into a table contained
+(located at <code class="docutils literal notranslate"><span class="pre">/path_to_repository/nexuslims/scripts/create_db.py</span></code>) will input the instruments.csv data into a table contained
 in the NexusLIMS database.</p>
 </section>
 </section>
@@ -102,7 +102,7 @@ in the NexusLIMS database.</p>
 <li class="toctree-l1"><a class="reference internal" href="readme.html">Overview &amp; Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="logger_gui.html">Logger GUI</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Administrator Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#cloning-the-nexuslims-repository">Cloning the NexusLIMS repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cloning-the-nexuslims-back-end">Cloning the NexusLIMS Back End</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#locating-the-instruments-table">Locating the Instruments Table</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#configuring-the-instruments-table">Configuring the Instruments Table</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#building-the-instruments-table">Building the Instruments Table</a></li>
