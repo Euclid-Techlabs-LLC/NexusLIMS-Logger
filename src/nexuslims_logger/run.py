@@ -32,6 +32,7 @@ class _Config(UserDict):
 
 
 def validate_config(config):
+    """simple validation of config settings"""
     # `api_url`
     api_url = config.get("NEXUSLIMSGUI_DBAPI_URL")
     res = requests.get(api_url)

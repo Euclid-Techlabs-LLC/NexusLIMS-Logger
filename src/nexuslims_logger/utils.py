@@ -10,6 +10,8 @@ from tendo import singleton
 
 
 def check_singleton():
+    """make sure only ONE instance of the program running."""
+
     if sys.platform == 'win32':
         if hasattr(sys, '_MEIPASS'):
             # we're in a pyinstaller environment, so use psutil to check for exe
@@ -46,6 +48,7 @@ def tendo_singleton():
 
 
 def show_error_msg_box(msg):
+    """show a tkinter error box."""
     root = tk.Tk()
     root.title("Error")
     root.withdraw()
@@ -54,6 +57,11 @@ def show_error_msg_box(msg):
 
 
 def get_logger(name, verbose=logging.INFO, stream=None):
+    """get a logger from logging module, direct output to stdout,
+    verbose level set by ``verbose``.
+
+    If additional stream is provided, direct output (DEBUG) to that
+    stream too."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 

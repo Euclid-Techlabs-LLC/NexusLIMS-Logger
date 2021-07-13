@@ -96,6 +96,19 @@ class FileWatcher:
         self.logger.debug("set instrument info")
 
     def get_files_to_upload(self):
+        """find files to upload recursively and return list of abs file names
+        and content checksum.
+
+        file satisfying the following condition will be considered for uploading:
+        - file type is allowed (set in app config)
+        - file modification timestamp is after the set threshold (session start time)
+        - file content checksum does not exist in cache or updated.
+
+        Returns
+        -------
+        List[Tuple[str, str]]
+            List of tuple consisting file names and MD5 checksum.
+        """
         res = []
         for p, dirs, fs in os.walk(self.watch_dir):
             for f in fs:
@@ -118,6 +131,9 @@ class FileWatcher:
         return res
 
     def upload(self):
+        """upload to the cloud object storage, set metadata and update the cache.
+        """
+
         files = self.get_files_to_upload()
         for f, md5 in files:
             relpath = os.path.relpath(f, self.watch_dir)

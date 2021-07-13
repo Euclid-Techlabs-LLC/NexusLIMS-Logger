@@ -1,8 +1,3 @@
-"""This fake instrument models the behavior of an instrument.
-
-It will connect to a mock data pool, randomly choose one and copy it to the
-specified output folder to mock a real instrument generating some data file.
-"""
 __all__ = ["GCPInstrument"]
 
 import logging
@@ -14,11 +9,13 @@ from google.cloud import storage
 
 
 class Instrument:
+    """Base class describes general behaviour of an instrument"""
     def generate_data(self):
         pass
 
 
 class GCPInstrument(Instrument):
+    """Mock an instrument with data stored in GCP."""
     def __init__(self, output_dir, bucket_name, bucket_dir, credential_fn,
                  logger=None):
         super(GCPInstrument, self).__init__()

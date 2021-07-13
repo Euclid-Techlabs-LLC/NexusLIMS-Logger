@@ -58,9 +58,6 @@ class ScreenRes:
         When an instance of this class is created, the screen is queried for its
         dimensions. This is done once, so as to limit the number of calls to
         external programs.
-
-        Can provide a db_logger instance (from MainApp) if output should be
-        logged to the LogWindow
         """
         default_screen_dims = ('800', '600')
         self.logger = logger or logging.getLogger("SCREEN")
@@ -265,7 +262,10 @@ class App(tk.Tk):
         self.logo_label.grid(row=0, column=0, sticky=tk.N, pady=(15, 0))
 
     def draw_info(self):
-        """information section"""
+        """information section
+
+        incl. loading text, progress bar, instrument label, datetime
+        """
 
         # Loading information that is hidden after session is established
         self.setup_frame = tk.Frame(self)
@@ -436,6 +436,8 @@ class App(tk.Tk):
         self.draw_buttons()
 
     def session_startup(self):
+        """start ``startup_thread``, update loading progress bar."""
+
         self.startup_thread = threading.Thread(
             target=self.session_startup_worker
         )
@@ -444,6 +446,20 @@ class App(tk.Tk):
         self.after(100, self.watch_for_startup_result)
 
     def session_startup_worker(self):
+        """session startup routine
+
+        setup db_logger, check if last session successfully ended;
+        If so, starts a new session, otherwise a dialogue window
+        should prompt user to decide whether to continue the unfinished
+        session or start a new session.
+
+        After the ``db_logger`` has been successfully setup, the information
+        of the instrument attached with this computer (fetched by
+        ``db_logger``) will be passed to ``filewatcher``. Then ``timeloop``
+        thread will start to syncing the instrument outputs to the
+        cloud storage.
+        """
+
         # a flag to indicate `self.db_logger` started successfully
         db_logger_start_success = False
 
@@ -524,7 +540,10 @@ class App(tk.Tk):
             self.logger.info("Sync thread started.")
 
     def watch_for_startup_result(self):
-        """Check if there is something in the queue."""
+        """Check if there is something in the queue.
+
+        update loading text and progress bar.
+        """
 
         try:
             res = self.startup_thread_queue.get(0)
@@ -548,6 +567,7 @@ class App(tk.Tk):
             self.after(100, self.watch_for_startup_result)
 
     def show_error_if_needed(self, res):
+        """show error box if ``res`` is an ``Exception``"""
         if isinstance(res, Exception):
             self.loading_pbar['value'] = 50
             st = ttk.Style()
@@ -560,6 +580,11 @@ class App(tk.Tk):
             lw.mainloop()
 
     def done_loading(self):
+        """actions by the end of loading.
+
+        put off ``setup_frame``, put up ``running_frame`` and labels, enable buttons.
+        """
+
         # Remove the setup_frame contents
         self.setup_frame.grid_forget()
 
@@ -575,6 +600,11 @@ class App(tk.Tk):
         self.enable_buttons()
 
     def switch_gui_to_end(self):
+        """actions by the start of ending.
+
+        put off ``running_frame``; putup ``setup_frame``, diable buttons
+        """
+
         # Remove the setup_frame contents
         self.running_frame.grid_forget()
 
@@ -585,6 +615,13 @@ class App(tk.Tk):
         self.disable_buttons()
 
     def session_end(self):
+        """routines for session ending.
+
+        signal ``startup_thread`` to exit,
+        start ``end_thread``,
+        change the frame, update loading text and progress bar.
+        """
+
         # signal the startup thread to exit (if it's still running)
         self.startup_thread_exit_queue.put(True)
 
@@ -609,6 +646,13 @@ class App(tk.Tk):
             self.after(100, self.watch_for_end_result)
 
     def session_end_worker(self):
+        """session ending routine.
+
+        ``db_logger`` perform ending actions,
+        stop file syncing thread,
+        final file syncing,
+        tear down ``db_logger``
+        """
         if self.db_logger.process_end(self.end_thread_queue,
                                       self.end_thread_exit_queue):
 
@@ -628,7 +672,10 @@ class App(tk.Tk):
                                               self.end_thread_exit_queue)
 
     def watch_for_end_result(self):
-        """Check if there is something in the queue."""
+        """Check if there is something in the queue.
+
+        update loading text and progress bar.
+        """
 
         try:
             res = self.end_thread_queue.get(0)
@@ -648,10 +695,14 @@ class App(tk.Tk):
             self.after(100, self.watch_for_end_result)
 
     def close_warning(self, num_to_show):
+        """set loading text to remind the closing action"""
+
         msg = "Closing window in %d seconds..." % num_to_show
         self.loading_status_text.set(msg)
 
     def on_closing(self):
+        """actions when user is closing the main window."""
+
         resp = PauseOrEndDialogue(self, db_logger=self.db_logger).show()
         self.logger.debug('User clicked on window manager close button; '
                           'asking for clarification')
@@ -668,6 +719,9 @@ class App(tk.Tk):
 
 
 class PauseOrEndDialogue(tk.Toplevel):
+    """Dialogue window prompts user for actions when the user
+     is closing the main window"""
+
     def __init__(self, parent, db_logger):
         super(PauseOrEndDialogue, self).__init__(parent)
         self.response = tk.StringVar()
@@ -781,32 +835,46 @@ class PauseOrEndDialogue(tk.Toplevel):
         self.parent.disable_buttons()
 
     def show(self):
+        """Show the dialogue window, return the user response."""
+
         self.wm_deiconify()
         self.focus_force()
         self.wait_window()
         return self.response.get()
 
     def click_end(self):
+        """record action, destroy the window."""
+
         self.response.set('end')
         self.destroy()
 
     def click_pause(self):
+        """record action, destroy the window."""
+
         self.response.set('pause')
         self.destroy()
 
     def click_cancel(self):
+        """record action, destroy the window."""
+
         self.response.set('cancel')
         self.destroy()
 
     def click_close(self):
+        """record action, destroy the window."""
+
         self.click_cancel()
 
     def destroy(self):
+        """destroy the window, enable buttons on the main window."""
         super(PauseOrEndDialogue, self).destroy()
         self.parent.enable_buttons()
 
 
 class HangingSessionDialog(tk.Toplevel):
+    """Dialogue window prompt user for actions when previous session is
+    detected not ended properly."""
+
     def __init__(self, parent, db_logger):
         super(HangingSessionDialog, self).__init__(parent)
         self.response = tk.StringVar()
@@ -894,24 +962,35 @@ class HangingSessionDialog(tk.Toplevel):
         self.parent.disable_buttons()
 
     def show(self):
+        """Show the dialogue window, return the user response."""
+
         self.wm_deiconify()
         self.focus_force()
         self.wait_window()
         return self.response.get()
 
     def click_new(self):
+        """record action, destroy the window."""
+
         self.response.set('new')
         self.destroy()
 
     def click_continue(self):
+        """record action, destroy the window."""
+
         self.response.set('continue')
         self.destroy()
 
     def click_close(self):
+        """enforce user to choose between **continue**
+        or **start** with en error box."""
+
         msg = "Please choose to either continue the existing session or start a new one."
         tkinter.messagebox.showerror(parent=self, title="Error", message=msg)
 
     def destroy(self):
+        """destroy the window, enable buttons on the main window."""
+
         super().destroy()
         self.parent.enable_buttons()
 

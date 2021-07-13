@@ -45,6 +45,8 @@ from dateutil.tz import tzlocal
 
 
 class DBSessionLogger:
+    """communicate with database."""
+
     def __init__(self, dbapi_url,
                  dbapi_username=None,
                  dbapi_password=None,
@@ -411,6 +413,7 @@ class DBSessionLogger:
         """
         teardown routine
         """
+
         msg = "TEARDOWN"
         self.logger.debug(msg)
         if thread_queue:
