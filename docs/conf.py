@@ -7,6 +7,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import sphinx_rtd_theme
 import os
 import sys
 import inspect
@@ -94,7 +95,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "nexuslims-logger"
+project = "NexusLIMS-Logger (GCP)"
 copyright = f"{datetime.now().year}, Euclid Techlabs, NIST ODI"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -148,7 +149,6 @@ pygments_style = "sphinx"
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -188,9 +188,15 @@ else:
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+html_context = {
+    'css_files': [
+        '_static/theme_overrides.css',  # overrides for wide tables in RTD theme
+    ],
+}
+
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
-# html_last_updated_fmt = '%b %d, %Y'
+html_last_updated_fmt = '%b %d, %Y'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.

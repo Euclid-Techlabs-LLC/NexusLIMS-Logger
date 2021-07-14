@@ -1,35 +1,55 @@
-================
-nexuslims-logger
-================
+======================
+NexusLIMS-Logger (GCP)
+======================
 
-This is the documentation of **nexuslims-logger**.
+**NexusLIMS-Logger** is a desktop GUI logging user's experiment session's start and end
+time to define a concept of **session**. It is implemented using tkinter module of Python.
+It is supposed to run on instrument control PC which has internet access.
 
-.. note::
+The functionality and interface are designed to be simple and easy to use. The user's
+normal instrument operation behavior is not altered except:
 
-    This is the main page of your project's `Sphinx`_ documentation.
-    It is formatted in `reStructuredText`_. Add additional pages
-    by creating rst-files in ``docs`` and adding them to the `toctree`_ below.
-    Use then `references`_ in order to link them from this page, e.g.
-    :ref:`authors` and :ref:`changes`.
+1. start the NexusLIMS-Logger before operating the instrument.
+2. leave NexusLIMS-Logger running during the operation of the instrument.
+3. click the button on the NexusLIMS-Logger to close the session after the instrument
+   operation is finished.
 
-    It is also possible to refer to the documentation of other Python packages
-    with the `Python domain syntax`_. By default you can reference the
-    documentation of `Sphinx`_, `Python`_, `NumPy`_, `SciPy`_, `matplotlib`_,
-    `Pandas`_, `Scikit-Learn`_. You can add more by extending the
-    ``intersphinx_mapping`` in your Sphinx's ``conf.py``.
+<screenshot here..>
 
-    The pretty useful extension `autodoc`_ is activated by default and lets
-    you include documentation from docstrings. Docstrings can be written in
-    `Google style`_ (recommended!), `NumPy style`_ and `classical style`_.
+The cloud based version has the database deployed on the cloud, and will transfer the
+raw data of the instrument to the cloud storage in the background.
+
+
+Overview
+========
+
+.. image:: _static/nexuslims_logger_gcp.png
+    :width: 450
+    :align: center
+
+
+NexusLIMS-Logger records the session information in MySQL DB, which is deployed on GCP (
+Google Cloud Platform).
+The communication is through a thin web app layer wrapping necessary database transactions
+and exposing APIs. After the session is started, a file transfer thread starts. It watches file
+changes of the instrument output folders periodically and uploaded the file to the GCP
+cloud storage when there is difference detected. The difference is compared with
+the MD5 checksum of the file content. The NexusLIMS-Logger should have write access
+of the corresponding bucket on the cloud. When the session is closed by the user, NexusLIMS-Logger
+will record the timestamp and mark the status in the database. Additionally, the file
+transfer thread is stopped, and a final file transfer job is performed to ensure all
+data belonging to this session is transferred to the cloud storage.
+
 
 
 Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   Overview <readme>
+   Install & Configuration <installconfig>
+   Compile <distribute>
    License <license>
    Authors <authors>
    Changelog <changelog>
