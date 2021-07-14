@@ -22,7 +22,7 @@ corrosponds to a different user and each column corrosponds to a different entry
 right, the Instrument table entries are as follows: ``instrument_pid``, ``api_url``, ``calendar_name``, 
 ``calendar_url``, ``location``, ``schema_name``, ``property_tag``, ``filestore_path``, ``computer_name``, 
 ``computer_ip``, and ``computer_mount``.  More information on the Instruments table entries can be found
-`here <https://euclidtechlabs.github.io/nexuslims/database.html>`_.
+`here <https://euclid-techlabs-llc.github.io/NexusLIMS/database.html>`_.
 
 
 Configuring the Instruments Table
