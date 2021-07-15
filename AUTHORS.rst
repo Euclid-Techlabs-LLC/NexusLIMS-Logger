@@ -1,6 +1,5 @@
-#############################
 Euclid Techlabs Contributors
-#############################
+============================
 
 * Weinan Si <w.si@euclidtechlabs.com>
 * John Callahan <j.callahan@euclidtechlabs.com>

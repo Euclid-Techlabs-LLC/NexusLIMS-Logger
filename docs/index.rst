@@ -50,9 +50,7 @@ Contents
 
    Install & Configuration <installconfig>
    Compile to executable <distribute>
-   License <license>
-   Authors <authors>
-   Changelog <changelog>
+   Authors & License <authorlicense>
    Module Reference <api/modules>
 
 
