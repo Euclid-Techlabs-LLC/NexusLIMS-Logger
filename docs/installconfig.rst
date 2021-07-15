@@ -54,7 +54,7 @@ The settings includes the following item:
      - bucket name of cloud storage which raw data is sync-ed to
 
 
-An example can be seen (``src/nexuslims_logger/config.json``)
+An example can be seen (``$ROOT/src/nexuslims_logger/config.json``)
 
 .. literalinclude:: ../src/nexuslims_logger/config.json
    :language: json
@@ -63,6 +63,7 @@ An example can be seen (``src/nexuslims_logger/config.json``)
 Additionally, NexusLIMS-Logger requires credential JSON file to be able to write
 to GCP cloud storage bucket. The credential JSON file can be downloaded from GCP
 project IAM section, a service account can be created for this purpose.
+NexusLIMS-Logger reads the credential JSON from ``$HOME/nexuslims/gui/creds.json``.
 
 Start
 =====

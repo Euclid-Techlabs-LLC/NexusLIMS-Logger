@@ -49,7 +49,7 @@ Contents
    :maxdepth: 1
 
    Install & Configuration <installconfig>
-   Compile <distribute>
+   Compile to executable <distribute>
    License <license>
    Authors <authors>
    Changelog <changelog>
