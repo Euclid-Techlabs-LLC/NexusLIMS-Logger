@@ -137,7 +137,7 @@ class FileWatcher:
         files = self.get_files_to_upload()
         for f, md5 in files:
             relpath = os.path.relpath(f, self.watch_dir)
-            bucket_path = os.path.join(self.bucket_dir, relpath)
+            bucket_path = "%s/%s" % (self.bucket_dir, relpath)
 
             ts = os.path.getmtime(f)
             mtime = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
