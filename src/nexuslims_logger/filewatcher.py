@@ -48,14 +48,14 @@ class FileWatcher:
         self.logger.debug(msg)
 
     @classmethod
-    def from_config(cls, config, credential_fn, cache_fn, logger=None):
-        return cls(config["NEXUSLIMSGUI_FILESTORE_PATH"],
-                   config["NEXUSLIMSGUI_DATA_BUCKET"],
+    def from_config(cls, config, watchdir, credential_fn, cache_fn, logger=None):
+        return cls(watchdir,
+                   config["NEXUSLIMSHUB_DATA_BUCKET"],
                    "",
                    credential_fn,
                    cache_fn,
-                   interval=config["NEXUSLIMSGUI_SYNC_INTERVAL_SECONDS"],
-                   file_types=config["NEXUSLIMSGUI_FILETYPES_SYNC"],
+                   interval=config["NEXUSLIMSHUB_SYNC_INTERVAL_SECONDS"],
+                   file_types=config["NEXUSLIMSHUB_FILETYPES_SYNC"],
                    logger=logger)
 
     @property

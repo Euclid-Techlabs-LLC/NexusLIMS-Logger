@@ -51,9 +51,9 @@ class GCPInstrument(Instrument):
         return outfn
 
     @classmethod
-    def from_config(cls, config, credential_fn, logger=None):
-        return cls(config["NEXUSLIMSGUI_FILESTORE_PATH"],
-                   config["NEXUSLIMSGUI_DATA_BUCKET"],
+    def from_config(cls, config, outputdir, credential_fn, logger=None):
+        return cls(outputdir,
+                   config["NEXUSLIMSHUB_DATA_BUCKET"],
                    "MockDataFiles",
                    credential_fn,
                    logger=logger)

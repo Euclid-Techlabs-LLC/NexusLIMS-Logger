@@ -1,165 +1,32 @@
 """LoggerTEM GUI"""
-import logging
-import sys
-import subprocess
-import os
-import re
 import io
-import queue
-import time
-import zmq
+import logging
+import os
 import platform
+import queue
+import sys
 import threading
+import time
 import tkinter as tk
 import tkinter.messagebox
 from tkinter import ttk
 
+import zmq
 
-def resource_path(relative_path):
-    try:
-        # try to set the base_path to the pyinstaller temp dir (for when we're)
-        # running from a compiled .exe built with pyinstaller
-        base_path = os.path.join(sys._MEIPASS, 'resources')
-    except Exception:
-        thisdir = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.join(thisdir, 'resources')
-
-    pth = os.path.join(base_path, relative_path)
-
-    return pth
+from .utils import resource_path
 
 
-class ScreenRes:
-    def __init__(self, logger=None):
-        """
-        When an instance of this class is created, the screen is queried for its
-        dimensions. This is done once, so as to limit the number of calls to
-        external programs.
-        """
-        default_screen_dims = ('800', '600')
-        self.logger = logger or logging.getLogger("SCREEN")
-        try:
-            if sys.platform == 'win32':
-                cmd = 'wmic path Win32_VideoController get ' + \
-                      'CurrentHorizontalResolution, CurrentVerticalResolution'
-                output = self.run_cmd(cmd).split()[-2::]
-                # Tested working in Windows XP and Windows 7/10
-                screen_dims = tuple(map(int, output))
-                self.logger.debug('Found "raw" Windows resolution '
-                                  'of {}'.format(screen_dims))
-
-                # Get the DPI of the screen so we can adjust the resolution
-                cmd = r'reg query "HKCU\Control Panel\Desktop\WindowMetrics" ' \
-                      r'/v AppliedDPI'
-                # pick off last value, which is DPI in hex, and convert to
-                # decimal:
-                dpi = 96
-                dpi = int(self.run_cmd(cmd).split()[-1], 16)
-                scale_factor = dpi / 96
-                screen_dims = tuple(int(d / scale_factor) for d in screen_dims)
-                self.logger.debug("Found DPI of {}; ".format(dpi) +
-                                  "Scale factor {}; Scaled ".format(scale_factor) +
-                                  "resolution is {}".format(screen_dims))
-                temp_file = 'TempWmicBatchFile.bat'
-                if os.path.isfile(temp_file):
-                    os.remove(temp_file)
-                    self.logger.debug("Removed {}".format(temp_file))
-
-            elif sys.platform == 'linux':
-                cmd = 'xrandr'
-                screen_dims = os.popen(cmd).read()
-                result = re.search(r'primary (\d+)x(\d+)', screen_dims)
-                screen_dims = result.groups() if result else default_screen_dims
-                screen_dims = tuple(map(int, screen_dims))
-                self.logger.debug('Found Linux resolution of '
-                                  '{}'.format(screen_dims))
-
-            else:
-                screen_dims = default_screen_dims
-        except Exception as e:
-            self.logger.warning("Caught exception when determining "
-                                "screen resolution: {}".format(e) + ' ' +
-                                "Using default of {}".format(default_screen_dims))
-            screen_dims = default_screen_dims
-        self.screen_dims = screen_dims
-        self.logger.debug("dimension: %s" % str(screen_dims))
-
-    def get_center_geometry_string(self, width, height):
-        """
-        This method will return a Tkinter geometry string that will place a
-        Toplevel window into the middle of the screen given the
-        widget's width and height (using a Windows command or `xrandr` as
-        needed). If it fails for some reason, a basic resolution of 800x600
-        is assumed.
-
-        Parameters
-        ----------
-        width : int
-            The width of the widget desired
-        height : int
-            The height of the widget desired
-
-        Returns
-        -------
-        geometry_string : str
-            The Tkinter geometry string that will put a window of `width` and
-            `height` at the center of the screen given the current resolution
-            (of
-            the format "WIDTHxHEIGHT+XPOSITION+YPOSITION")
-        """
-        screen_width, screen_height = (int(x) for x in self.screen_dims)
-        geometry_string = "%dx%d%+d%+d" % (width, height,
-                                           int(screen_width / 2 - width / 2),
-                                           int(screen_height / 2 - height / 2))
-        return geometry_string
-
-    def run_cmd(self, cmd):
-        """
-        Run a command using the subprocess module and return the output. Note
-        that because we want to run the eventual logger without a console
-        visible, we do not have access to the standard stdin, stdout,
-        and stderr, and these need to be redirected ``subprocess`` pipes,
-        accordingly.
-
-        Parameters
-        ----------
-        cmd : str
-            The command to run (will be run in a new Windows `cmd` shell).
-            ``stderr`` will be redirected for ``stdout`` and included in the
-            returned output
-
-        Returns
-        -------
-        output : str
-            The output of ``cmd``
-        """
-        try:
-            # Redirect stderr to stdout, and then stdout and stdin to
-            # subprocess.PIP
-            p = subprocess.Popen(cmd,
-                                 shell=True,
-                                 stderr=subprocess.STDOUT,
-                                 stdout=subprocess.PIPE,
-                                 stdin=subprocess.PIPE)
-            p.stdin.close()
-            p.wait()
-            output = p.stdout.read().decode()
-        except subprocess.CalledProcessError as e:
-            p = e.output.decode()
-            msg = "command %s returned with error (code %d): %s" % (
-                e.cmd, e.returncode, p)
-            self.logger.exception(msg)
-        return output
-
-
-class App(tk.TK):
-    def __init__(self, hubaddr, screen_res=None, logger=None, log_text=None):
+class App(tk.Tk):
+    def __init__(self, hubaddr, watchdir,
+                 user=None, screen_res=None, logger=None, log_text=None):
         super(App, self).__init__()
 
         # zmq socket
         self.hubaddr = hubaddr
         self.zmqcxt = zmq.Context()
-        self.socket = self.zmqcxt.socket(zmq.REQ)
+
+        self.watchdir = watchdir
+        self.user = user
 
         # screen res
         self.screen_res = screen_res or ScreenRes()
@@ -180,10 +47,7 @@ class App(tk.TK):
         self.end_thread_queue = queue.Queue()
 
         # GUI styling
-        self.style = ttk.Style()
-        if sys.platform == "win32":
-            self.style.theme_use('winnative')
-        self.style.configure('.', font=("TkDefaultFont"))
+        self.style = ttk.Style(self)
         self.info_font = 'TkDefaultFont 16 bold'
         self.geometry(self.screen_res.get_center_geometry_string(350, 600))
         self.resizable(False, False)
@@ -204,8 +68,6 @@ class App(tk.TK):
         # start session
         self.session_started = False
         self.session_startup()
-        self.logger.info("Session started.")
-        self.session_started = True
 
     def on_closing(self):
         """actions when user is closing the main window."""
@@ -426,50 +288,183 @@ class App(tk.TK):
         self.after(100, self.watch_for_startup_result)
 
     def session_startup_worker(self):
-        """TODO: communicate with hub via socket to perform start session tasks."""
+        """communicate with hub via socket to perform start session tasks."""
         start_success = False
-        with self.socket.connect(self.hubaddr) as socket:
-            socket.send_json({'client_id': self.computer_name, 'cmd': 'SETUP'})
+
+        with self.zmqcxt.socket(zmq.REQ).connect(self.hubaddr) as socket:
+            socket.send_json({'client_id': self.computer_name, 'user': self.user,  'cmd': 'SETUP'})
             msg = socket.recv_json()
+            print(msg)
+            if msg['exception']:
+                self.startup_thread_queue.put(Exception(msg['message']))
+                return
+            self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+            socket.send_json({'client_id': self.computer_name,
+                             'user': self.user,  'cmd': 'LAST_SESSION_CHECK'})
+            msg = socket.recv_json()
+            if msg['exception']:
+                self.startup_thread_queue.put(Exception(msg['message']))
+                return
+
             if msg['state']:
                 self.startup_thread_queue.put((msg['message'], msg['progress']))
-                socket.send_json({'client_id': self.computer_name, 'cmd': 'LAST_SESSION_CHECK'})
+
+                socket.send_json({'client_id': self.computer_name,
+                                 'user': self.user,  'cmd': 'START_PROCESS'})
                 msg = socket.recv_json()
-                if msg['state']:
-                    socket.send_json()
-                elif msg['exception']:
+                if msg['exception']:
                     self.startup_thread_queue.put(Exception(msg['message']))
-                else:
-                    # TODO hangsession
-                    pass
+                    return
+                self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                socket.send_json({'client_id': self.computer_name,
+                                 'user': self.user,  'cmd': 'START_PROCESS_CHECK'})
+                msg = socket.recv_json()
+                if msg['exception']:
+                    self.startup_thread_queue.put(Exception(msg['message']))
+                    return
+                self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                socket.send_json({'client_id': self.computer_name,
+                                 'user': self.user,  'cmd': 'TEAR_DOWN'})
+                msg = socket.recv_json()
+                # put more information for TEARDOWN
+                self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                start_success = True
 
             else:
-                self.startup_thread_queue.put(Exception(msg['message']))
-
-
-
-            if state == 'Error':
-                errmsg = msg['message']
-            elif state == 'PAUSE_FOUND':
-                response = HangingSessionDialog(self, self.db_logger).show()
+                # we got an inconsistent state from the DB, so ask user
+                # what to do about it
+                response = HangingSessionDialog(self).show()
                 if response == 'new':
-                    socket.send_json({'client_id': self.computer_name, 'cmd': 'STOP_PROCESS'})
-                    socket.send_json({'client_id': self.computer_name, 'cmd': 'START_PROCESS'})
+                    # we need to end the existing session that was found
+                    # and then create a new one by changing the session_id to
+                    # a new UUID4 and running process_start
+                    self.loading_pbar_length = 7.0
+                    # self.db_logger.session_id = self.db_logger.last_session_id
+                    self.logger.info('Chose to start a new session; '
+                                     'ending the existing session with id ')
+
+                    socket.send_json({'client_id': self.computer_name,
+                                     'user': self.user, 'cmd': 'END_PROCESS'})
+                    msg = socket.recv_json()
+                    if msg['exception']:
+                        self.startup_thread_queue.put(Exception(msg['message']))
+                        return
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                    socket.send_json({'client_id': self.computer_name,
+                                     'user': self.user,  'cmd': 'END_PROCESS_CHECK'})
+                    msg = socket.recv_json()
+                    if msg['exception']:
+                        self.startup_thread_queue.put(Exception(msg['message']))
+                        return
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                    socket.send_json({'client_id': self.computer_name, 'user': self.user,
+                                     'cmd': 'UPDATE_START_RECORD'})
+                    msg = socket.recv_json()
+                    if msg['exception']:
+                        self.startup_thread_queue.put(Exception(msg['message']))
+                        return
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                    socket.send_json({'client_id': self.computer_name, 'user': self.user,
+                                     'cmd': 'UPDATE_START_RECORD_CHECK'})
+                    msg = socket.recv_json()
+                    if msg['exception']:
+                        self.startup_thread_queue.put(Exception(msg['message']))
+                        return
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                    socket.send_json({'client_id': self.computer_name,
+                                     'user': self.user,  'cmd': 'START_PROCESS'})
+                    msg = socket.recv_json()
+                    if msg['exception']:
+                        self.startup_thread_queue.put(Exception(msg['message']))
+                        return
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                    socket.send_json({'client_id': self.computer_name, 'user': self.user,
+                                     'cmd': 'START_PROCESS_CHECK'})
+                    msg = socket.recv_json()
+                    if msg['exception']:
+                        self.startup_thread_queue.put(Exception(msg['message']))
+                        return
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                    socket.send_json({'client_id': self.computer_name,
+                                     'user': self.user,  'cmd': 'TEAR_DOWN'})
+                    msg = socket.recv_json()
+                    # put more information for TEARDOWN
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
                     start_success = True
                 elif response == 'continue':
+                    # we set the session_id to the one that was previously
+                    # found (and set the time accordingly, and only run the
+                    # teardown instead of process_start
+                    self.loading_pbar_length = 2.0
+                    self.running_Label_1.configure(text='Continuing the last session for the')
+                    self.running_Label_2.configure(text=' started at ')
+                    self.logger.info('Chose to continue the existing '
+                                     'session; setting the logger\'s '
+                                     'session_id to the existing value')
+                    socket.send_json({'client_id': self.computer_name, 'user': self.user,
+                                     'cmd': 'CONTINUE_LAST_SESSION'})
+                    msg = socket.recv_json()
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
+                    socket.send_json({'client_id': self.computer_name,
+                                     'user': self.user,  'cmd': 'TEAR_DOWN'})
+                    msg = socket.recv_json()
+                    # put more information for TEARDOWN
+                    self.startup_thread_queue.put((msg['message'], msg['progress']))
+
                     start_success = True
 
-        if start_success:
-            socket.send_json({'client_id': self.computer_name, 'cmd': 'START_SYNC'})
-            msg = socket.recv_json()
-            if msg['state'] == 'SUCCESS':
+            if start_success:
+                socket.send_json({'client_id': self.computer_name, 'user': self.user,
+                                  'cmd': 'START_SYNC', 'watchdir': self.watchdir})
+                msg = socket.recv_json()
+                if msg['exception']:
+                    self.startup_thread_queue.put(Exception(msg['message']))
+                    return
                 self.logger.info("Sync thread started.")
+
+    def watch_for_startup_result(self):
+        """Check if there is something in the queue.
+
+        update loading text and progress bar.
+        """
+
+        try:
+            res = self.startup_thread_queue.get(0)
+            self.show_error_if_needed(res)
+            msg, progress = res
+            if isinstance(msg, str):
+                self.loading_status_text.set(msg)
+            self.loading_pbar['value'] = \
+                int(progress / self.loading_pbar_length * 100)
+            self.update()
+            if isinstance(msg, dict):
+                self.loading_status_text.set('TEARDOWN')
+                self.instr_string.set(msg['instrument_schema'])
+                self.datetime_string.set(msg['session_start_ts'])
+                self.logger.info("Session started.")
+                self.session_started = True
+                self.done_loading()
+
+            else:
+                self.after(100, self.watch_for_startup_result)
+        except queue.Empty:
+            self.after(100, self.watch_for_startup_result)
 
     def session_end(self):
         """routines for session ending.
 
-        signal ``startup_thread`` to exit,
-        start ``end_thread``,
         change the frame, update loading text and progress bar.
         """
 
@@ -497,8 +492,56 @@ class App(tk.TK):
             self.after(100, self.watch_for_end_result)
 
     def session_end_worker(self):
-        """TODO: communicate with hub via socket to perform end session tasks."""
-        pass
+        """communicate with hub via socket to perform end session tasks."""
+        with self.zmqcxt.socket(zmq.REQ).connect(self.hubaddr) as socket:
+            socket.send_json({'client_id': self.computer_name,
+                             'user': self.user, 'cmd': 'END_PROCESS'})
+            msg = socket.recv_json()
+            if msg['exception']:
+                self.end_thread_queue.put(Exception(msg['message']))
+                return
+            self.end_thread_queue.put((msg['message'], msg['progress']))
+
+            socket.send_json({'client_id': self.computer_name,
+                             'user': self.user, 'cmd': 'END_PROCESS_CHECK'})
+            msg = socket.recv_json()
+            if msg['exception']:
+                self.end_thread_queue.put(Exception(msg['message']))
+                return
+            self.end_thread_queue.put((msg['message'], msg['progress']))
+
+            socket.send_json({'client_id': self.computer_name,
+                             'user': self.user, 'cmd': 'UPDATE_START_RECORD'})
+            msg = socket.recv_json()
+            if msg['exception']:
+                self.end_thread_queue.put(Exception(msg['message']))
+                return
+            self.end_thread_queue.put((msg['message'], msg['progress']))
+
+            socket.send_json({'client_id': self.computer_name, 'user': self.user,
+                             'cmd': 'UPDATE_START_RECORD_CHECK'})
+            msg = socket.recv_json()
+            if msg['exception']:
+                self.end_thread_queue.put(Exception(msg['message']))
+                return
+            self.end_thread_queue.put((msg['message'], msg['progress']))
+
+            prog_num = msg['progress']  # keep using the same progress number for next
+
+            socket.send_json({'client_id': self.computer_name,
+                             'user': self.user,  'cmd': 'STOP_SYNC'})
+            msg = socket.recv_json()
+            if msg['exception']:
+                self.end_thread_queue.put(Exception(msg['message']))
+                return
+            self.end_thread_queue.put((msg['message'], prog_num))
+
+            self.logger.debug("Final sync finished.")
+
+            socket.send_json({'client_id': self.computer_name,
+                             'user': self.user,  'cmd': 'TEAR_DOWN'})
+            msg = socket.recv_json()
+            self.end_thread_queue.put((msg['message'], msg['progress']))
 
     def watch_for_end_result(self):
         """Check if there is something in the queue.
@@ -510,11 +553,13 @@ class App(tk.TK):
             res = self.end_thread_queue.get(0)
             self.show_error_if_needed(res)
             msg, progress = res
-            self.loading_status_text.set(msg)
+            if isinstance(msg, str):
+                self.loading_status_text.set(msg)
             self.loading_pbar['value'] = \
                 int(progress / self.loading_pbar_length * 100)
             self.update()
-            if msg == "TEARDOWN":
+            if isinstance(msg, dict):
+                self.loading_status_text.set('TEARDOWN')
                 self.after(1000, self.destroy)
                 self.close_warning(1)
                 self.after(1000, lambda: self.close_warning(0))
@@ -523,9 +568,21 @@ class App(tk.TK):
         except queue.Empty:
             self.after(100, self.watch_for_end_result)
 
+    def close_warning(self, num_to_show):
+        """set loading text to remind the closing action"""
+
+        msg = "Closing window in %d seconds..." % num_to_show
+        self.loading_status_text.set(msg)
+
     def generate_data(self):
-        """TODO: communicate with hub via socket to generate data"""
-        pass
+        """communicate with hub via socket to generate data"""
+        with self.zmqcxt.socket(zmq.REQ).connect(self.hubaddr) as socket:
+            socket.send_json({'client_id': self.computer_name,
+                              'user': self.user,
+                              'cmd': 'MAKE_DATA',
+                              'outputdir': self.watchdir})
+            msg = socket.recv_json()
+            self.logger.info(msg['message'])
 
     def show_error_if_needed(self, res):
         """show error box if ``res`` is an ``Exception``"""
@@ -539,6 +596,26 @@ class App(tk.TK):
             tkinter.messagebox.showerror(parent=self, title="Error", message=msg)
             lw = LogWindow(parent=self, is_error=True)
             lw.mainloop()
+
+    def done_loading(self):
+        """actions by the end of loading.
+
+        put off ``setup_frame``, put up ``running_frame`` and labels, enable buttons.
+        """
+
+        # Remove the setup_frame contents
+        self.setup_frame.grid_forget()
+
+        # grid the running_frame contents to be shown after session is started
+        self.running_frame.grid(row=1, column=0)
+        self.running_Label_1.grid(row=0, pady=(20, 0))
+        self.instrument_label.grid(row=1, pady=(15, 5))
+        self.running_Label_2.grid(row=2, pady=(0, 0))
+        self.datetime_label.grid(row=3, pady=(5, 15))
+        self.running_Label_3.grid(row=4, pady=(0, 20))
+
+        # activate the "end session" button
+        self.enable_buttons()
 
     def switch_gui_to_end(self):
         """actions by the start of ending.
@@ -554,6 +631,14 @@ class App(tk.TK):
 
         # disable the buttons
         self.disable_buttons()
+
+    def destroy(self):
+        with self.zmqcxt.socket(zmq.REQ).connect(self.hubaddr) as socket:
+            socket.send_json({'client_id': self.computer_name,
+                             'user': self.user,  'cmd': 'DESTROY'})
+            msg = socket.recv_json()
+            self.logger.info(msg['message'])
+        super(App, self).destroy()
 
 
 class PauseOrEndDialogue(tk.Toplevel):
@@ -828,6 +913,121 @@ class LogWindow(tk.Toplevel):
 
         self.clipboard_append(text_content)
         self.update()
+
+
+class HangingSessionDialog(tk.Toplevel):
+    """Dialogue window prompt user for actions when previous session is
+    detected not ended properly."""
+
+    def __init__(self, parent):
+        super(HangingSessionDialog, self).__init__(parent)
+        self.response = tk.StringVar()
+        self.parent = parent
+        self.screen_res = parent.screen_res
+        self.geometry(self.screen_res.get_center_geometry_string(400, 250))
+        self.grab_set()
+        self.title("Incomplete session warning")
+        self.bell()
+
+        self.new_icon = tk.PhotoImage(file=resource_path('file-plus.png'))
+        self.continue_icon = tk.PhotoImage(file=resource_path('arrow-alt-circle-right.png'))
+        self.error_icon = tk.PhotoImage(file=resource_path('error-icon.png'))
+
+        self.top_frame = tk.Frame(self)
+        self.button_frame = tk.Frame(self, padx=15, pady=10)
+        self.label_frame = tk.Frame(self.top_frame)
+
+        self.top_label = ttk.Label(self.label_frame,
+                                   text="Warning!",
+                                   font=("TkDefaultFont", 14, "bold"),
+                                   wraplength=250,
+                                   anchor='w',
+                                   justify='left')
+        msg = "An interrupted session was found in the database for this " \
+              "instrument. "
+
+        msg += "Would you like to continue that existing session, or end it " \
+               "and start a new one?"
+
+        self.warn_label = ttk.Label(self.label_frame,
+                                    wraplength=250,
+                                    anchor='w',
+                                    justify='left',
+                                    text=msg)
+
+        self.error_icon_label = ttk.Label(self.top_frame,
+                                          background=self['background'],
+                                          foreground="#000000",
+                                          image=self.error_icon)
+
+        self.continue_button = tk.Button(self.button_frame,
+                                         text='Continue',
+                                         command=self.click_continue,
+                                         padx=10,
+                                         pady=5,
+                                         width=80,
+                                         compound=tk.LEFT,
+                                         image=self.continue_icon)
+        self.new_button = tk.Button(self.button_frame,
+                                    text='New session',
+                                    command=self.click_new,
+                                    padx=10,
+                                    pady=5,
+                                    width=80,
+                                    compound=tk.LEFT,
+                                    image=self.new_icon)
+
+        self.top_frame.grid(row=0, column=0)
+        self.error_icon_label.grid(column=0, row=0, padx=20, pady=25)
+        self.label_frame.grid(column=1, row=0, padx=0, pady=0)
+        self.top_label.grid(row=0, column=0, padx=10, pady=0, sticky=tk.SW)
+        self.warn_label.grid(row=1, column=0, padx=10, pady=(5, 0))
+
+        self.button_frame.grid(row=1, column=0, sticky=tk.S, ipadx=10, ipady=5)
+        self.continue_button.grid(row=0, column=0, sticky=tk.E, padx=15)
+        self.new_button.grid(row=0, column=1, sticky=tk.W, padx=15)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
+        self.focus_force()
+        self.resizable(False, False)
+        self.transient(parent)
+
+        self.protocol("WM_DELETE_WINDOW", self.click_close)
+        self.parent.disable_buttons()
+
+    def show(self):
+        """Show the dialogue window, return the user response."""
+
+        self.wm_deiconify()
+        self.focus_force()
+        self.wait_window()
+        return self.response.get()
+
+    def click_new(self):
+        """record action, destroy the window."""
+
+        self.response.set('new')
+        self.destroy()
+
+    def click_continue(self):
+        """record action, destroy the window."""
+
+        self.response.set('continue')
+        self.destroy()
+
+    def click_close(self):
+        """enforce user to choose between **continue**
+        or **start** with en error box."""
+
+        msg = "Please choose to either continue the existing session or start a new one."
+        tkinter.messagebox.showerror(parent=self, title="Error", message=msg)
+
+    def destroy(self):
+        """destroy the window, enable buttons on the main window."""
+
+        super(HangingSessionDialog, self).destroy()
+        self.parent.enable_buttons()
 
 
 class NoteWindow(tk.Toplevel):
@@ -1105,3 +1305,109 @@ class ToolTip(tk.Toplevel):
         """
         self.visible = 0
         self.withdraw()
+
+
+def help():
+    res = (
+        "OPTIONS:  (-s|v|vv|h)\n"
+        "   -s  silent\n"
+        "   -v  verbose\n"
+        "   -vv debug\n"
+        "   -h  help\n"
+    )
+    return res
+
+
+def validate_config(config):
+    """simple validation of config settings"""
+    # TODO NEXUSLIMSGUI_HUB_ADDRESS
+    
+    # `filestore_path`
+    filestore_path = config.get("NEXUSLIMSGUI_FILESTORE_PATH")
+    if not os.path.isdir(filestore_path):
+        raise ValueError("filestore_path `%s` does not exist" % filestore_path)
+
+    return True
+
+
+if __name__ == '__main__':
+    import functools
+    import getpass
+    import json
+    import pathlib
+
+    from .utils import (Config, ScreenRes, check_singleton, get_logger,
+                        show_error_msg_box)
+
+    # check singleton
+    try:
+        check_singleton()
+    except OSError:
+        msg = ("Only one instance of the NexusLIMS Session Logger can be run at one time. "
+               "Please close the existing window if you would like to start a new session "
+               "and run the application again.")
+        show_error_msg_box(msg)
+        sys.exit(0)
+
+    # options
+    verbosity = logging.DEBUG
+    if len(sys.argv) > 1:
+        v = sys.argv[1][1:]
+        if v == 's':
+            verbosity = logging.CRITICAL
+        elif v == 'v':
+            verbosity = logging.INFO
+        elif v == 'vv':
+            verbosity = logging.DEBUG
+        elif v == 'h':
+            print(help())
+            sys.exit(1)
+        else:
+            print("wrong option provided!")
+            print(help())
+            sys.exit(0)
+
+    log_text = io.StringIO()
+    _get_logger = functools.partial(get_logger, verbose=verbosity, stream=log_text)
+
+    logger = _get_logger("APP")
+
+    # config, credential, cache
+    config_fn = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "config.json")
+    config = Config()
+    try:
+        config.update(json.load(open(config_fn)))
+    except Exception:
+        logger.warning("file `%s` cannot be found, use ENV variables instead.")
+
+    try:
+        validate_config(config)
+    except Exception as e:
+        show_error_msg_box(str(e))
+        sys.exit(0)
+
+    # credential
+    cred_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "creds.json")
+    if not os.path.exists(cred_json):
+        msg = "Credential file `%s` cannot be found!" % cred_json
+        show_error_msg_box(msg)
+        sys.exit(0)
+
+    # cache
+    cache_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "cache.json")
+    if not os.path.exists(cache_json):
+        with open(cache_json, 'w') as f:
+            f.write(json.dumps({}))
+
+    # user
+    login = getpass.getuser()
+
+    # app
+    sres = ScreenRes(logger=_get_logger("SCREEN"))
+    hubaddr = config.get('NEXUSLIMSGUI_HUB_ADDRESS')
+    watchdir = config.get('NEXUSLIMSGUI_FILESTORE_PATH')
+
+    app = App(hubaddr, watchdir, user=login, screen_res=sres,
+              logger=_get_logger('GUI'),
+              log_text=log_text)
+    app.mainloop()
