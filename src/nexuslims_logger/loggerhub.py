@@ -14,7 +14,7 @@ import requests
 import zmq
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
-from timeloop.app import Timeloop
+from timeloop import Timeloop
 
 from .filewatcher import FileWatcher
 from .instrument import GCPInstrument
@@ -504,7 +504,7 @@ class App(tk.Tk):
                 tl = self.timeloops.get(client_id)
                 try:
                     tl.stop()
-                except:
+                except Exception:
                     pass
 
                 fw = self.filewatchers.get(client_id)
@@ -530,6 +530,10 @@ class App(tk.Tk):
                 self.gcpinstruments.pop(client_id, None)
                 res = {'state': True,
                        'message': 'Hub released resources',
+                       'exception': False}
+            elif cmd == 'HELLO':
+                res = {'state': True,
+                       'message': 'world',
                        'exception': False}
             else:
                 res = dsl.handle(msg)
@@ -559,8 +563,7 @@ def validate_config(config):
     port = config.get('NEXUSLIMSHUB_PORT')
     if not isinstance(port, int) or port <= 3000:
         raise ValueError('`NEXUSLIMSHUB_PORT` must be set as integer > 3000')
-    # TODO check port not in use
-    
+
     return True
 
 

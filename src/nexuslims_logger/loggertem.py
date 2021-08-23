@@ -15,6 +15,8 @@ import zmq
 
 from .utils import resource_path
 
+COMPUTER_NAME = platform.node().split('.')[0]
+
 
 class App(tk.Tk):
     def __init__(self, hubaddr, watchdir,
@@ -37,7 +39,7 @@ class App(tk.Tk):
         self.log_text = log_text or io.StringIO()
 
         # computer name
-        self.computer_name = platform.node().split('.')[0]
+        self.computer_name = COMPUTER_NAME
 
         # button container
         self.buttons = []
@@ -1320,8 +1322,19 @@ def help():
 
 def validate_config(config):
     """simple validation of config settings"""
-    # TODO NEXUSLIMSGUI_HUB_ADDRESS
-    
+    # NEXUSLIMSGUI_HUB_ADDRESS
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.setsockopt(zmq.RCVTIMEO, 500)
+    socket.connect(config.get("NEXUSLIMSGUI_HUB_ADDRESS"))
+    socket.send_json({'client_id': COMPUTER_NAME, 'cmd': 'HELLO'})
+    if socket.recv_json() != {
+        'state': True,
+        'message': 'world',
+        'exception': False
+    }:
+        raise ValueError("LoggerHub is not binded to `NEXUSLIMSGUI_HUB_ADDRESS`")
+
     # `filestore_path`
     filestore_path = config.get("NEXUSLIMSGUI_FILESTORE_PATH")
     if not os.path.isdir(filestore_path):
