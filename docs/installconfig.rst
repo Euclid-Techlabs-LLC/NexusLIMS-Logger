@@ -52,6 +52,8 @@ The settings includes the following item:
      - file transfer interval in seconds
    * - ``NEXUSLIMSGUI_DATA_BUCKET``
      - bucket name of cloud storage which raw data is sync-ed to
+   * - ``NEXUSLIMSGUI_GCP_PROJECT``
+     - project ID of GCP
 
 
 An example can be seen (``$ROOT/src/nexuslims_logger/config.json``)
@@ -60,10 +62,6 @@ An example can be seen (``$ROOT/src/nexuslims_logger/config.json``)
    :language: json
    :linenos:
 
-Additionally, NexusLIMS-Logger requires credential JSON file to be able to write
-to GCP cloud storage bucket. The credential JSON file can be downloaded from GCP
-project IAM section, a service account can be created for this purpose.
-NexusLIMS-Logger reads the credential JSON from ``$HOME/nexuslims/gui/creds.json``.
 
 Start
 =====
