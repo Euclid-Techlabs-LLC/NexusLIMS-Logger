@@ -69,6 +69,7 @@ class App(tk.Tk):
 
         # start session
         self.session_started = False
+        self.session_note = ''
         self.session_startup()
 
     def on_closing(self):
@@ -456,6 +457,7 @@ class App(tk.Tk):
                 self.loading_status_text.set('TEARDOWN')
                 self.instr_string.set(msg['instrument_schema'])
                 self.datetime_string.set(msg['session_start_ts'])
+                self.session_note = msg['session_note']
                 self.logger.info("Session started.")
                 self.session_started = True
                 self.done_loading()
@@ -638,6 +640,17 @@ class App(tk.Tk):
 
         # disable the buttons
         self.disable_buttons()
+
+    def save_note(self):
+        socket = self.zmqcxt.socket(zmq.REQ)
+        socket.connect(self.hubaddr)
+        with socket:
+            socket.send_json({'client_id': self.computer_name,
+                              'user': self.user,
+                              'cmd': 'SAVE_NOTE',
+                              'argv': [self.session_note]})
+            msg = socket.recv_json()
+            self.logger.info(msg['message'])
 
     def destroy(self):
         socket = self.zmqcxt.socket(zmq.REQ)
@@ -1039,7 +1052,7 @@ class HangingSessionDialog(tk.Toplevel):
 
 
 class NoteWindow(tk.Toplevel):
-    def __init__(self, parent, is_error=False):
+    def __init__(self, parent):
         """
         Create and raise a window showing a text input field so users can add
         session note to the current session; the last saved session note will
@@ -1050,8 +1063,6 @@ class NoteWindow(tk.Toplevel):
         ----------
         parent : MainApp
             The MainApp (or other widget) this NoteWindow is associated with
-        is_error : bool
-            If True, closing the Note window will close the whole application
         """
         super(NoteWindow, self).__init__(parent, padx=3, pady=3)
         self.screen_res = parent.screen_res
@@ -1062,10 +1073,7 @@ class NoteWindow(tk.Toplevel):
         self.parent = parent
 
         # prepare some variables
-        self.old_note = self.parent.db_logger.session_note
-        self.old_note = self.old_note.replace("''", "'")
-        self.note = tk.StringVar()
-        self.note.set(self.old_note)
+        self.note = tk.StringVar(self, value=self.parent.session_note)
 
         self.session_note = tk.Text(self,
                                     width=40,
@@ -1081,7 +1089,7 @@ class NoteWindow(tk.Toplevel):
 
         self.session_note['yscrollcommand'] = self.s_v.set
         self.session_note['xscrollcommand'] = self.s_h.set
-        self.session_note.insert("1.0", self.old_note)
+        self.session_note.insert("1.0", self.note.get())
 
         # add functional buttons
         self.button_frame = tk.Frame(self, padx=15, pady=10)
@@ -1111,28 +1119,16 @@ class NoteWindow(tk.Toplevel):
                 msg="Save session note before closing this window",
                 delay=0.25)
 
-        def _close_cmd():
-            """
-            Fix for LogWindow preventing app from closing if there was an error
-            """
-            parent.notes = self.old_note
-            self.destroy()
-            parent.destroy()
-            sys.exit(1)
-
         self.close_button = tk.Button(self.button_frame,
                                       text='Close',  # window',
-                                      command=self.destroy if not is_error else
-                                      _close_cmd,
+                                      command=self.destroy,  # TODO prompt user to save or not
                                       padx=10, pady=5, width=60,
                                       compound=tk.LEFT, image=self.close_icon)
         # Make close window button do same thing as regular close button
-        self.protocol("WM_DELETE_WINDOW",
-                      self.destroy if not is_error else lambda: sys.exit(1))
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
 
         ToolTip(self.close_button,
-                msg="Close this window" if not is_error else
-                "Close the application; make sure to copy the log if you need!",
+                msg="Close this window",
                 delay=0.25)
 
         # self.text_label.grid(column=0, row=0, sticky=(S, W))
@@ -1147,20 +1143,13 @@ class NoteWindow(tk.Toplevel):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
         self.focus_force()
-        if is_error:
-            self.change_close_button(1, tk.DISABLED)
-            self.after(1000, lambda: self.change_close_button(0, tk.ACTIVE))
 
     def save_note(self):
         # Save the current session note in the text box, overwrite previous saved note
-        self.note = self.session_note.get("1.0", tk.END)
-        # escape single quote by doubling it so it won't cause
-        # issues with sql insert_statement
-        self.note = self.note.replace("'", "''")
-        if self.note != self.old_note:
-            self.old_note = self.note
-            # self.parent.notes = self.note
-            self.parent.db_logger.session_note = self.note
+        self.note.set(self.session_note.get("1.0", tk.END))
+        if self.note.get() != self.parent.session_note:
+            self.parent.session_note = self.note.get()
+            self.parent.save_note()
 
     def delete_note(self):
         # delete the current session note in the text box

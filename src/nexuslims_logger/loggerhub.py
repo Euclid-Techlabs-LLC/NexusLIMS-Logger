@@ -4,7 +4,7 @@ import queue
 import sys
 import threading
 import tkinter as tk
-from datetime import datetime, timedelta
+from datetime import timedelta
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 from urllib.parse import urljoin
@@ -58,6 +58,7 @@ class DBSessionLogger:
         self.last_session_id = None
         self.last_session_row_number = None
         self.last_session_ts = None
+        self.last_start_id = None  # last start `id_session_log`
         self.progress_num = 0
 
         self.session_note = ""
@@ -68,6 +69,7 @@ class DBSessionLogger:
             'START_PROCESS': self.process_start,
             'START_PROCESS_CHECK': self.process_start_check,
             'TEAR_DOWN': self.db_logger_teardown,
+            'SAVE_NOTE': self.save_note,
             'END_PROCESS': self.process_end,
             'END_PROCESS_CHECK': self.process_end_check,
             'UPDATE_START_RECORD': self.update_start,
@@ -86,8 +88,10 @@ class DBSessionLogger:
 
     def handle(self, msg):
         cmd = msg['cmd']
+        argv = msg.get('argv', [])
+        kwarg = msg.get('kwarg', {})
         try:
-            is_success, msg = self.action_map[cmd]()
+            is_success, msg = self.action_map[cmd](*argv, **kwarg)
         except Exception as e:
             return {'state': False,
                     'exception': True,
@@ -134,6 +138,7 @@ class DBSessionLogger:
             self.last_session_id = data["session_identifier"]
             self.last_session_row_number = data["id_session_log"]
             self.last_session_ts = data["timestamp"]
+            self.session_note = data["session_note"]
             self.session_id = self.last_session_id
 
         if self.last_entry_type == "END":
@@ -159,6 +164,7 @@ class DBSessionLogger:
         Returns True if successful, False if not
         """
         self.session_id = str(uuid4())
+        self.session_note = ""
 
         # Insert START log
         url = urljoin(self.dbapi_url, "/api/session")
@@ -251,29 +257,32 @@ class DBSessionLogger:
         self.logger.debug(msg)
         return True, msg
 
+    def __last_start_id(self):
+        if self.last_start_id is None:
+            # Query matched last start
+            url = urljoin(self.dbapi_url, "/api/lastsession")
+            payload = {
+                "session_identifier": self.session_id,
+                "event_type": "START",
+            }
+            res = requests.get(url, params=payload, auth=self.dbapi_auth)
+            if res.status_code != 200:
+                msg = "Error getting matching `START` log. " + str(res.content)
+                self.logger.error(msg)
+                raise Exception(msg)
+
+            data = res.json()["data"]
+            msg = "Found matched `START` log: " + str(data)
+            self.logger.debug(msg)
+
+            self.last_start_id = data["id_session_log"]
+        return self.last_start_id
+
     def update_start(self):
-        # Query matched last start
-        url = urljoin(self.dbapi_url, "/api/lastsession")
-        payload = {
-            "session_identifier": self.session_id,
-            "event_type": "START",
-        }
-        res = requests.get(url, params=payload, auth=self.dbapi_auth)
-        if res.status_code != 200:
-            msg = "Error getting matching `START` log. " + str(res.content)
-            self.logger.error(msg)
-            raise Exception(msg)
-
-        data = res.json()["data"]
-        msg = "Found matched `START` log: " + str(data)
-        self.logger.debug(msg)
-
-        self.last_start_id = data["id_session_log"]
-
         # Update matched last start
         url = urljoin(self.dbapi_url, "/api/session")
         payload = {
-            "id_session_log": self.last_start_id,
+            "id_session_log": self.__last_start_id(),
             "record_status": "TO_BE_BUILT",
         }
         res = requests.put(url, data=payload, auth=self.dbapi_auth)
@@ -290,7 +299,7 @@ class DBSessionLogger:
         # Verify update success by querying
         url = urljoin(self.dbapi_url, "/api/session")
         payload = {
-            "id_session_log": self.last_start_id,
+            "id_session_log": self.__last_start_id(),
             "record_status": "TO_BE_BUILT",
         }
         res = requests.get(url, params=payload, auth=self.dbapi_auth)
@@ -342,6 +351,24 @@ class DBSessionLogger:
 
         return True, msg
 
+    def save_note(self, note_text):
+        # Update matched last start
+        url = urljoin(self.dbapi_url, "/api/session")
+        payload = {
+            "id_session_log": self.__last_start_id(),
+            "session_note": note_text,
+        }
+        res = requests.put(url, data=payload, auth=self.dbapi_auth)
+        if res.status_code != 200:
+            msg = "Error updating session_note. " + str(res.content)
+            self.logger.error(msg)
+            raise Exception(msg)
+
+        self.session_note = note_text
+        msg = "session_note saved."
+        self.logger.info(msg)
+        return True, msg
+
     def db_logger_teardown(self):
         """
         teardown routine
@@ -352,7 +379,8 @@ class DBSessionLogger:
         # `msg` here is a JSON object to pass additional information for GUI pannel display
         return True, {
             'instrument_schema': self.instr_schema,
-            'session_start_ts': self.session_start_time.strftime("%a %b %d, %Y\n%I:%M:%S %p")
+            'session_start_ts': self.session_start_time.strftime("%a %b %d, %Y\n%I:%M:%S %p"),
+            'session_note': self.session_note
         }
 
 
@@ -453,8 +481,6 @@ class App(tk.Tk):
         # zmq socket
         self.zmqcxt = zmq.Context()
         self.socket = self.zmqcxt.socket(zmq.REP)
-        p = self.config.get("NEXUSLIMSHUB_PORT")
-        self.socket.bind(f'tcp://*:{p}')
 
         # containers
         self.dbsessionloggers = {}
@@ -463,10 +489,15 @@ class App(tk.Tk):
         self.gcpinstruments = {}
 
     def start(self):
+        p = self.config.get("NEXUSLIMSHUB_PORT")
+        self.socket.bind(f'tcp://*:{p}')
+
         self.thread = threading.Thread(target=self.run)
         self.thread.start()
         self.start_btn.configure(state=tk.DISABLED)
         self.end_btn.configure(state=tk.NORMAL)
+
+        self.logger.info(f'LoggerHub started, listening on port {p}')
 
     def run(self):
         while True:
