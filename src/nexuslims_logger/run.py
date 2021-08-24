@@ -59,6 +59,9 @@ def help():
 
 
 def main():
+    from google_auth_oauthlib import flow
+    from google.cloud import storage
+
     # check singleton
     try:
         check_singleton()
@@ -106,13 +109,6 @@ def main():
         show_error_msg_box(str(e))
         sys.exit(0)
 
-    # credential
-    cred_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "creds.json")
-    if not os.path.exists(cred_json):
-        msg = "Credential file `%s` cannot be found!" % cred_json
-        show_error_msg_box(msg)
-        sys.exit(0)
-
     # cache
     cache_json = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "cache.json")
     if not os.path.exists(cache_json):
@@ -127,11 +123,21 @@ def main():
                                        user=login,
                                        logger=_get_logger("DSL"))
     sres = ScreenRes(logger=_get_logger("SCREEN"))
+
+    # authenticate with end user
+    client_secret = os.path.join(os.path.dirname(__file__), 'client_secrets.json')
+    appflow = flow.InstalledAppFlow.from_client_secrets_file(
+        client_secret,
+        scopes=storage.Client.SCOPE
+    )
+    appflow.run_local_server(port=8947)
+    credentials = appflow.credentials
+
     instr = GCPInstrument.from_config(config,
-                                      credential_fn=cred_json,
+                                      credentials=credentials,
                                       logger=_get_logger("GCP"))
     fw = FileWatcher.from_config(config,
-                                 credential_fn=cred_json,
+                                 credentials=credentials,
                                  cache_fn=cache_json,
                                  logger=_get_logger("FW"))
 

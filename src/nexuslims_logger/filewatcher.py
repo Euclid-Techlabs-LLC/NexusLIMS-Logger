@@ -26,12 +26,12 @@ def calc_file_md5(filename):
 
 
 class FileWatcher:
-    def __init__(self, watch_dir, bucket_name, bucket_dir, credential_fn,
-                 cache_fn, interval=600, file_types=None, mtime_since=None,
+    def __init__(self, watch_dir, bucket_name, bucket_dir, credentials, cache_fn,
+                 project=None, interval=600, file_types=None, mtime_since=None,
                  instr_info=None, logger=None):
         self.watch_dir = watch_dir
         self._bucket_dir = bucket_dir
-        self.client = storage.Client.from_service_account_json(credential_fn)
+        self.client = storage.Client(project=project, credentials=credentials)
         self.bucket = self.client.get_bucket(bucket_name)
 
         self.cache_fn = cache_fn
@@ -48,12 +48,13 @@ class FileWatcher:
         self.logger.debug(msg)
 
     @classmethod
-    def from_config(cls, config, credential_fn, cache_fn, logger=None):
+    def from_config(cls, config, credentials, cache_fn, logger=None):
         return cls(config["NEXUSLIMSGUI_FILESTORE_PATH"],
                    config["NEXUSLIMSGUI_DATA_BUCKET"],
                    "",
-                   credential_fn,
+                   credentials,
                    cache_fn,
+                   project=config["NEXUSLIMSGUI_GCP_PROJECT"],
                    interval=config["NEXUSLIMSGUI_SYNC_INTERVAL_SECONDS"],
                    file_types=config["NEXUSLIMSGUI_FILETYPES_SYNC"],
                    logger=logger)

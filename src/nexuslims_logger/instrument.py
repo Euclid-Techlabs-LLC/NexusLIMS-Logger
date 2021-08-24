@@ -10,18 +10,20 @@ from google.cloud import storage
 
 class Instrument:
     """Base class describes general behaviour of an instrument"""
+
     def generate_data(self):
         pass
 
 
 class GCPInstrument(Instrument):
     """Mock an instrument with data stored in GCP."""
-    def __init__(self, output_dir, bucket_name, bucket_dir, credential_fn,
-                 logger=None):
+
+    def __init__(self, output_dir, bucket_name, bucket_dir, credentials,
+                 project=None, logger=None):
         super(GCPInstrument, self).__init__()
         self.output_dir = output_dir
         self.bucket_dir = bucket_dir
-        self.client = storage.Client.from_service_account_json(credential_fn)
+        self.client = storage.Client(project=project, credentials=credentials)
         self.bucket = self.client.get_bucket(bucket_name)
         self.logger = logger or logging.getLogger("GCP")
         self.logger.info("Instrument initialized.")
@@ -51,9 +53,10 @@ class GCPInstrument(Instrument):
         return outfn
 
     @classmethod
-    def from_config(cls, config, credential_fn, logger=None):
+    def from_config(cls, config, credentials, logger=None):
         return cls(config["NEXUSLIMSGUI_FILESTORE_PATH"],
                    config["NEXUSLIMSGUI_DATA_BUCKET"],
                    "MockDataFiles",
-                   credential_fn,
+                   credentials,
+                   project=config["NEXUSLIMSGUI_GCP_PROJECT"],
                    logger=logger)
