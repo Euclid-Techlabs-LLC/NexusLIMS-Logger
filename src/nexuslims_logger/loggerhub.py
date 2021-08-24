@@ -121,6 +121,7 @@ class DBSessionLogger:
 
         if res.status_code >= 500:
             msg = str(res.content)
+            self.logger.debug(res.text)
             self.logger.error(msg)
             raise Exception(msg)
 
@@ -133,6 +134,7 @@ class DBSessionLogger:
             self.last_session_id = data["session_identifier"]
             self.last_session_row_number = data["id_session_log"]
             self.last_session_ts = data["timestamp"]
+            self.session_id = self.last_session_id
 
         if self.last_entry_type == "END":
             msg = "Verified database consistency for the %s." % self.instr_schema
@@ -222,6 +224,7 @@ class DBSessionLogger:
         res = requests.post(url, data=payload, auth=self.dbapi_auth)
         if res.status_code != 200:
             msg = "Error inserting `END` log for session"
+            self.logger.debug(res.text)
             self.logger.error(msg)
             raise Exception(msg)
 
@@ -304,10 +307,8 @@ class DBSessionLogger:
         return True, msg
 
     def continue_last_session(self):
-        self.session_id = self.last_session_id
         self.session_started = True
-        self.session_start_time = datetime.strptime(
-            self.last_session_ts, "%a, %d %b %Y %H:%M:%S %Z")
+        self.session_start_time = parse(self.last_session_ts).astimezone(tzlocal())
         msg = 'Set start time/id as last start time/id.'
         return True, msg
 
@@ -348,6 +349,7 @@ class DBSessionLogger:
 
         msg = "TEARDOWN"
         self.logger.debug(msg)
+        # `msg` here is a JSON object to pass additional information for GUI pannel display
         return True, {
             'instrument_schema': self.instr_schema,
             'session_start_ts': self.session_start_time.strftime("%a %b %d, %Y\n%I:%M:%S %p")
@@ -493,22 +495,27 @@ class App(tk.Tk):
                 fw.mtime_since = dsl.session_start_time.timestamp()
                 fw.instr_info = dsl.instr_info
 
-                tl = self.timeloops.setdefault(client_id, Timeloop())
-                tl.logger = self.logger
-                tl._add_job(fw.upload, timedelta(seconds=fw.interval))
-                tl.start()
+                if client_id not in self.timeloops:
+                    tl = Timeloop()
+                    tl.logger = self.logger
+                    tl._add_job(fw.upload, timedelta(seconds=fw.interval))
+                    tl.start()
+                    self.timeloops[client_id] = tl
                 res = {'state': True,
                        'message': 'sync thread started',
                        'exception': False}
             elif cmd == 'STOP_SYNC':
                 tl = self.timeloops.get(client_id)
-                try:
-                    tl.stop()
-                except Exception:
-                    pass
+                if tl:
+                    try:
+                        tl.stop()
+                    except Exception as e:
+                        self.logger.exception(e)
+                        pass
 
                 fw = self.filewatchers.get(client_id)
-                fw.upload()
+                if fw:
+                    fw.upload()
 
                 res = {'state': True,
                        'message': 'sync thread stopped',
@@ -524,10 +531,12 @@ class App(tk.Tk):
                        'message': 'copy a datafile',
                        'exception': False}
             elif cmd == 'DESTROY':
-                self.dbsessionloggers.pop(client_id, None)
-                self.filewatchers.pop(client_id, None)
-                self.timeloops.pop(client_id, None)
                 self.gcpinstruments.pop(client_id, None)
+                tl = self.timeloops.pop(client_id, None)
+                if tl:
+                    tl.stop()
+                self.filewatchers.pop(client_id, None)
+                self.dbsessionloggers.pop(client_id, None)
                 res = {'state': True,
                        'message': 'Hub released resources',
                        'exception': False}
@@ -535,8 +544,13 @@ class App(tk.Tk):
                 res = {'state': True,
                        'message': 'world',
                        'exception': False}
-            else:
+            elif cmd in dsl.action_map:
                 res = dsl.handle(msg)
+            else:
+                self.logger.error(f'Undefined cmd: {cmd} received from client {client_id}!')
+                res = {'state': False,
+                       'message': f'{cmd} is not defined',
+                       'exception': True}
 
             self.socket.send_json(res)
 

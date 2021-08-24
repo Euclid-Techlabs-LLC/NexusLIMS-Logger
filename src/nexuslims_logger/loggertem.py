@@ -293,17 +293,18 @@ class App(tk.Tk):
         """communicate with hub via socket to perform start session tasks."""
         start_success = False
 
-        with self.zmqcxt.socket(zmq.REQ).connect(self.hubaddr) as socket:
+        socket = self.zmqcxt.socket(zmq.REQ)
+        socket.connect(self.hubaddr)
+        with socket:
             socket.send_json({'client_id': self.computer_name, 'user': self.user,  'cmd': 'SETUP'})
             msg = socket.recv_json()
-            print(msg)
             if msg['exception']:
                 self.startup_thread_queue.put(Exception(msg['message']))
                 return
             self.startup_thread_queue.put((msg['message'], msg['progress']))
 
             socket.send_json({'client_id': self.computer_name,
-                             'user': self.user,  'cmd': 'LAST_SESSION_CHECK'})
+                              'user': self.user,  'cmd': 'LAST_SESSION_CHECK'})
             msg = socket.recv_json()
             if msg['exception']:
                 self.startup_thread_queue.put(Exception(msg['message']))
@@ -313,7 +314,7 @@ class App(tk.Tk):
                 self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                 socket.send_json({'client_id': self.computer_name,
-                                 'user': self.user,  'cmd': 'START_PROCESS'})
+                                  'user': self.user,  'cmd': 'START_PROCESS'})
                 msg = socket.recv_json()
                 if msg['exception']:
                     self.startup_thread_queue.put(Exception(msg['message']))
@@ -321,7 +322,7 @@ class App(tk.Tk):
                 self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                 socket.send_json({'client_id': self.computer_name,
-                                 'user': self.user,  'cmd': 'START_PROCESS_CHECK'})
+                                  'user': self.user,  'cmd': 'START_PROCESS_CHECK'})
                 msg = socket.recv_json()
                 if msg['exception']:
                     self.startup_thread_queue.put(Exception(msg['message']))
@@ -329,7 +330,7 @@ class App(tk.Tk):
                 self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                 socket.send_json({'client_id': self.computer_name,
-                                 'user': self.user,  'cmd': 'TEAR_DOWN'})
+                                  'user': self.user,  'cmd': 'TEAR_DOWN'})
                 msg = socket.recv_json()
                 # put more information for TEARDOWN
                 self.startup_thread_queue.put((msg['message'], msg['progress']))
@@ -347,10 +348,10 @@ class App(tk.Tk):
                     self.loading_pbar_length = 7.0
                     # self.db_logger.session_id = self.db_logger.last_session_id
                     self.logger.info('Chose to start a new session; '
-                                     'ending the existing session with id ')
+                                     'ending the existing session with id')
 
                     socket.send_json({'client_id': self.computer_name,
-                                     'user': self.user, 'cmd': 'END_PROCESS'})
+                                      'user': self.user, 'cmd': 'END_PROCESS'})
                     msg = socket.recv_json()
                     if msg['exception']:
                         self.startup_thread_queue.put(Exception(msg['message']))
@@ -358,7 +359,7 @@ class App(tk.Tk):
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                     socket.send_json({'client_id': self.computer_name,
-                                     'user': self.user,  'cmd': 'END_PROCESS_CHECK'})
+                                      'user': self.user,  'cmd': 'END_PROCESS_CHECK'})
                     msg = socket.recv_json()
                     if msg['exception']:
                         self.startup_thread_queue.put(Exception(msg['message']))
@@ -366,7 +367,7 @@ class App(tk.Tk):
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                     socket.send_json({'client_id': self.computer_name, 'user': self.user,
-                                     'cmd': 'UPDATE_START_RECORD'})
+                                      'cmd': 'UPDATE_START_RECORD'})
                     msg = socket.recv_json()
                     if msg['exception']:
                         self.startup_thread_queue.put(Exception(msg['message']))
@@ -374,7 +375,7 @@ class App(tk.Tk):
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                     socket.send_json({'client_id': self.computer_name, 'user': self.user,
-                                     'cmd': 'UPDATE_START_RECORD_CHECK'})
+                                      'cmd': 'UPDATE_START_RECORD_CHECK'})
                     msg = socket.recv_json()
                     if msg['exception']:
                         self.startup_thread_queue.put(Exception(msg['message']))
@@ -382,7 +383,7 @@ class App(tk.Tk):
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                     socket.send_json({'client_id': self.computer_name,
-                                     'user': self.user,  'cmd': 'START_PROCESS'})
+                                      'user': self.user,  'cmd': 'START_PROCESS'})
                     msg = socket.recv_json()
                     if msg['exception']:
                         self.startup_thread_queue.put(Exception(msg['message']))
@@ -390,7 +391,7 @@ class App(tk.Tk):
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                     socket.send_json({'client_id': self.computer_name, 'user': self.user,
-                                     'cmd': 'START_PROCESS_CHECK'})
+                                      'cmd': 'START_PROCESS_CHECK'})
                     msg = socket.recv_json()
                     if msg['exception']:
                         self.startup_thread_queue.put(Exception(msg['message']))
@@ -398,7 +399,7 @@ class App(tk.Tk):
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                     socket.send_json({'client_id': self.computer_name,
-                                     'user': self.user,  'cmd': 'TEAR_DOWN'})
+                                      'user': self.user,  'cmd': 'TEAR_DOWN'})
                     msg = socket.recv_json()
                     # put more information for TEARDOWN
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
@@ -415,12 +416,12 @@ class App(tk.Tk):
                                      'session; setting the logger\'s '
                                      'session_id to the existing value')
                     socket.send_json({'client_id': self.computer_name, 'user': self.user,
-                                     'cmd': 'CONTINUE_LAST_SESSION'})
+                                      'cmd': 'CONTINUE_LAST_SESSION'})
                     msg = socket.recv_json()
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
 
                     socket.send_json({'client_id': self.computer_name,
-                                     'user': self.user,  'cmd': 'TEAR_DOWN'})
+                                      'user': self.user,  'cmd': 'TEAR_DOWN'})
                     msg = socket.recv_json()
                     # put more information for TEARDOWN
                     self.startup_thread_queue.put((msg['message'], msg['progress']))
@@ -495,7 +496,9 @@ class App(tk.Tk):
 
     def session_end_worker(self):
         """communicate with hub via socket to perform end session tasks."""
-        with self.zmqcxt.socket(zmq.REQ).connect(self.hubaddr) as socket:
+        socket = self.zmqcxt.socket(zmq.REQ)
+        socket.connect(self.hubaddr)
+        with socket:
             socket.send_json({'client_id': self.computer_name,
                              'user': self.user, 'cmd': 'END_PROCESS'})
             msg = socket.recv_json()
@@ -513,7 +516,7 @@ class App(tk.Tk):
             self.end_thread_queue.put((msg['message'], msg['progress']))
 
             socket.send_json({'client_id': self.computer_name,
-                             'user': self.user, 'cmd': 'UPDATE_START_RECORD'})
+                              'user': self.user, 'cmd': 'UPDATE_START_RECORD'})
             msg = socket.recv_json()
             if msg['exception']:
                 self.end_thread_queue.put(Exception(msg['message']))
@@ -521,7 +524,7 @@ class App(tk.Tk):
             self.end_thread_queue.put((msg['message'], msg['progress']))
 
             socket.send_json({'client_id': self.computer_name, 'user': self.user,
-                             'cmd': 'UPDATE_START_RECORD_CHECK'})
+                              'cmd': 'UPDATE_START_RECORD_CHECK'})
             msg = socket.recv_json()
             if msg['exception']:
                 self.end_thread_queue.put(Exception(msg['message']))
@@ -531,7 +534,7 @@ class App(tk.Tk):
             prog_num = msg['progress']  # keep using the same progress number for next
 
             socket.send_json({'client_id': self.computer_name,
-                             'user': self.user,  'cmd': 'STOP_SYNC'})
+                              'user': self.user,  'cmd': 'STOP_SYNC'})
             msg = socket.recv_json()
             if msg['exception']:
                 self.end_thread_queue.put(Exception(msg['message']))
@@ -541,7 +544,7 @@ class App(tk.Tk):
             self.logger.debug("Final sync finished.")
 
             socket.send_json({'client_id': self.computer_name,
-                             'user': self.user,  'cmd': 'TEAR_DOWN'})
+                              'user': self.user,  'cmd': 'TEAR_DOWN'})
             msg = socket.recv_json()
             self.end_thread_queue.put((msg['message'], msg['progress']))
 
@@ -578,13 +581,15 @@ class App(tk.Tk):
 
     def generate_data(self):
         """communicate with hub via socket to generate data"""
-        with self.zmqcxt.socket(zmq.REQ).connect(self.hubaddr) as socket:
-            socket.send_json({'client_id': self.computer_name,
-                              'user': self.user,
-                              'cmd': 'MAKE_DATA',
-                              'outputdir': self.watchdir})
-            msg = socket.recv_json()
-            self.logger.info(msg['message'])
+        socket = self.zmqcxt.socket(zmq.REQ)
+        socket.connect(self.hubaddr)
+        socket.send_json({'client_id': self.computer_name,
+                          'user': self.user,
+                          'cmd': 'MAKE_DATA',
+                          'outputdir': self.watchdir})
+        msg = socket.recv_json()
+        self.logger.info(msg['message'])
+        socket.close()
 
     def show_error_if_needed(self, res):
         """show error box if ``res`` is an ``Exception``"""
@@ -635,7 +640,9 @@ class App(tk.Tk):
         self.disable_buttons()
 
     def destroy(self):
-        with self.zmqcxt.socket(zmq.REQ).connect(self.hubaddr) as socket:
+        socket = self.zmqcxt.socket(zmq.REQ)
+        socket.connect(self.hubaddr)
+        with socket:
             socket.send_json({'client_id': self.computer_name,
                              'user': self.user,  'cmd': 'DESTROY'})
             msg = socket.recv_json()
@@ -1002,8 +1009,7 @@ class HangingSessionDialog(tk.Toplevel):
         """Show the dialogue window, return the user response."""
 
         self.wm_deiconify()
-        self.focus_force()
-        self.wait_window()
+        self.parent.wait_window(self)
         return self.response.get()
 
     def click_new(self):
@@ -1028,8 +1034,8 @@ class HangingSessionDialog(tk.Toplevel):
     def destroy(self):
         """destroy the window, enable buttons on the main window."""
 
-        super(HangingSessionDialog, self).destroy()
         self.parent.enable_buttons()
+        super().destroy()
 
 
 class NoteWindow(tk.Toplevel):
