@@ -390,8 +390,8 @@ class QueueHandler(logging.Handler):
     The ConsoleUi class polls this queue to display records in a ScrolledText widget
     """
     # Example from Moshe Kaplan: https://gist.github.com/moshekaplan/c425f861de7bbf28ef06
-    # (https://stackoverflow.com/questions/13318742/python-logging-to-tkinter-text-widget) is not thread safe!
-    # See https://stackoverflow.com/questions/43909849/tkinter-python-crashes-on-new-thread-trying-to-log-on-main-thread
+    # (https://stackoverflow.com/questions/13318742/python-logging-to-tkinter-text-widget) is not thread safe! # noqa
+    # See https://stackoverflow.com/questions/43909849/tkinter-python-crashes-on-new-thread-trying-to-log-on-main-thread # noqa
 
     def __init__(self, log_queue):
         super().__init__()
@@ -555,7 +555,7 @@ class App(tk.Tk):
                 instr = self.gcpinstruments.setdefault(
                     client_id, GCPInstrument.from_config(self.config,
                                                          msg.get('outputdir'),
-                                                         credential_fn=cred_json,
+                                                         credential_fn=self.cred_json,
                                                          logger=self.logger))
                 instr.generate_data()
                 res = {'state': True,
@@ -612,7 +612,7 @@ def validate_config(config):
     return True
 
 
-if __name__ == '__main__':
+def main():
     import json
     import os
     import pathlib
@@ -679,3 +679,7 @@ if __name__ == '__main__':
     # app
     app = App(config, cred_json, cache_json, verbose=verbosity)
     app.mainloop()
+
+
+if __name__ == '__main__':
+    main()

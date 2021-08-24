@@ -13,7 +13,7 @@ from tkinter import ttk
 
 import zmq
 
-from .utils import resource_path
+from .utils import resource_path, ScreenRes
 
 COMPUTER_NAME = platform.node().split('.')[0]
 
@@ -1338,7 +1338,7 @@ def validate_config(config):
     return True
 
 
-if __name__ == '__main__':
+def main():
     import functools
     import getpass
     import json
@@ -1419,3 +1419,7 @@ if __name__ == '__main__':
               logger=_get_logger('GUI'),
               log_text=log_text)
     app.mainloop()
+
+
+if __name__ == '__main__':
+    main()
