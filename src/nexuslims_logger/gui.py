@@ -1212,8 +1212,10 @@ class NoteWindow(tk.Toplevel):
 
     def save_note(self):
         # Save the current session note in the text box, overwrite previous saved note
-        self.note.set(self.session_note.get("1.0", tk.END))
+        self.note.set(self.session_note.get("1.0", tk.END).strip())
         if self.note.get() != self.parent.db_logger.session_note:
+            self.parent.logger.debug(f'current note: {self.note.get()}, '
+                                     f'previous note: {self.parent.db_logger.session_note}')
             self.parent.db_logger.session_note = self.note.get()
             self.parent.db_logger.save_note()
 
@@ -1239,6 +1241,10 @@ class NoteWindow(tk.Toplevel):
         self.update()
 
     def on_closing(self):
+        if self.note.get() == self.session_note.get("1.0", tk.END).strip():
+            self.destroy()
+            return
+
         query = "Do you want to save the note?"
         resp = ConfirmUi(self, query).show()
         if resp == 'yes':
