@@ -1185,22 +1185,13 @@ class NoteWindow(tk.Toplevel):
                 msg="Save session note before closing this window",
                 delay=0.25)
 
-        # def _close_cmd():
-        #     """
-        #     Fix for LogWindow preventing app from closing if there was an error
-        #     """
-        #     parent.notes = self.old_note
-        #     self.destroy()
-        #     parent.destroy()
-        #     sys.exit(1)
-
         self.close_button = tk.Button(self.button_frame,
                                       text='Close',  # window',
-                                      command=self.destroy,
+                                      command=self.on_closing,
                                       padx=10, pady=5, width=60,
                                       compound=tk.LEFT, image=self.close_icon)
         # Make close window button do same thing as regular close button
-        self.protocol("WM_DELETE_WINDOW", self.destroy)
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         ToolTip(self.close_button,
                 msg="Close this window",
@@ -1246,6 +1237,73 @@ class NoteWindow(tk.Toplevel):
 
         self.clipboard_append(text_content)
         self.update()
+
+    def on_closing(self):
+        query = "Do you want to save the note?"
+        resp = ConfirmUi(self, query).show()
+        if resp == 'yes':
+            self.save_note()
+            self.destroy()
+        elif resp == 'no':
+            self.destroy()
+        elif resp == 'cancel':
+            pass
+
+
+class ConfirmUi(tk.Toplevel):
+    """Popup window ask user for confirmation
+
+       It has three buttons: yes, no, cancel
+    """
+
+    def __init__(self, parent, query):
+        super(ConfirmUi, self).__init__(parent)
+        self.parent = parent
+        self.response = tk.StringVar()
+        self.geometry('380x150')
+        self.resizable(False, False)
+        self.title('Please confirm')
+
+        label = ttk.Label(self, text=query)
+        button_frame = ttk.Frame(self, padding=(5, 5, 5, 5))
+        yes_button = ttk.Button(button_frame,
+                                text='Yes',
+                                command=self.click_yes)
+        no_button = ttk.Button(button_frame,
+                               text='No',
+                               command=self.click_no)
+        cancel_button = ttk.Button(button_frame,
+                                   text='Cancel',
+                                   command=self.click_cancel)
+        label.grid(row=0, column=0)
+        button_frame.grid(row=1, column=0)
+        yes_button.grid(row=0, column=0)
+        no_button.grid(row=0, column=1, padx=10, pady=10)
+        cancel_button.grid(row=0, column=2)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+
+        self.protocol("WM_DELETE_WINDOW", self.click_cancel)
+        self.focus_force()
+        self.transient(parent)
+        self.grab_set()
+
+    def show(self):
+        self.wm_deiconify()
+        self.parent.wait_window(self)
+        return self.response.get()
+
+    def click_yes(self):
+        self.response.set('yes')
+        self.destroy()
+
+    def click_no(self):
+        self.response.set('no')
+        self.destroy()
+
+    def click_cancel(self):
+        self.response.set('cancel')
+        self.destroy()
 
 
 class ToolTip(tk.Toplevel):
