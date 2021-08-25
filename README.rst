@@ -2,4 +2,4 @@
 NexusLIMS-Logger
 ================
 
-https://nexuslims-logger.readthedocs.io/en/latest/
+https://nexuslims-logger.readthedocs.io/en/devhub/
