@@ -80,6 +80,7 @@ class DBSessionLogger:
         self.last_session_id = None
         self.last_session_row_number = None
         self.last_session_ts = None
+        self.last_start_id = None  # last START `id_session_log`
         self.progress_num = 0
 
         self.session_note = ""
@@ -175,6 +176,7 @@ class DBSessionLogger:
                 self.progress_num += 1
             return True
         elif self.last_entry_type == "START":
+            self.session_note = data["session_note"]
             msg = "Database is inconsistent for the %s. " \
                   "(last entry [id_session_log = %s] was a `START`)" % (
                       self.instr_schema, self.last_session_row_number)
@@ -328,13 +330,13 @@ class DBSessionLogger:
             thread_queue.put((msg, self.progress_num))
             self.progress_num += 1
 
-        last_start_id = data["id_session_log"]
+        self.last_start_id = data["id_session_log"]
 
         # Update matched last start
         self.check_exit_queue(thread_queue, exit_queue)
         url = urljoin(self.dbapi_url, "/api/session")
         payload = {
-            "id_session_log": last_start_id,
+            "id_session_log": self.last_start_id,
             "record_status": "TO_BE_BUILT",
         }
         res = requests.put(url, data=payload, auth=self.dbapi_auth)
@@ -406,6 +408,49 @@ class DBSessionLogger:
         self.instr_info = data
         self.instr_pid = self.instr_info["instrument_pid"]
         self.instr_schema = self.instr_info["schema_name"]
+
+        return True
+
+    def save_note(self, thread_queue=None, exit_queue=None):
+        # Query matched last start
+        if self.last_start_id is None:
+            self.check_exit_queue(thread_queue, exit_queue)
+            url = urljoin(self.dbapi_url, "/api/lastsession")
+            payload = {
+                "session_identifier": self.session_id,
+                "event_type": "START",
+            }
+            res = requests.get(url, params=payload, auth=self.dbapi_auth)
+            if res.status_code != 200:
+                msg = "Error getting matching `START` log. " + str(res.content)
+                self.logger.error(msg)
+                if thread_queue:
+                    thread_queue.put(Exception(msg))
+                return False
+
+            data = res.json()["data"]
+            msg = "Found matched `START` log: " + str(data)
+            self.logger.debug(msg)
+            if thread_queue:
+                thread_queue.put((msg, self.progress_num))
+                self.progress_num += 1
+
+            self.last_start_id = data["id_session_log"]
+
+        # Update matched last start
+        self.check_exit_queue(thread_queue, exit_queue)
+        url = urljoin(self.dbapi_url, "/api/session")
+        payload = {
+            "id_session_log": self.last_start_id,
+            "session_note": self.session_note,
+        }
+        res = requests.put(url, data=payload, auth=self.dbapi_auth)
+        if res.status_code != 200:
+            msg = "Error updating session_note. " + str(res.content)
+            self.logger.error(msg)
+            if thread_queue:
+                thread_queue.put(Exception(msg))
+            return False
 
         return True
 
