@@ -1,10 +1,15 @@
 ======================
-NexusLIMS-Logger (GCP)
+NexusLIMS-Logger (HUB)
 ======================
 
 **NexusLIMS-Logger** is a desktop GUI logging user's experiment session's start and end
-time to define a concept of **session**. It is implemented using tkinter module of Python.
-It is supposed to run on instrument control PC which has internet access.
+time to define a concept of **session**. It is implemented using ``tkinter`` module of Python.
+It has two components:
+
+- ``LoggerTEM``: run on instrument control PC whose internet traffic is restricted
+- ``LoggerHUB``: run on seprate PC whose internet traffic is not
+
+The communication between the two is established via a TCP/IP socket.
 
 The functionality and interface are designed to be simple and easy to use. The user's
 normal instrument operation behavior is not altered except:
@@ -17,28 +22,33 @@ normal instrument operation behavior is not altered except:
 <screenshot here..>
 
 The cloud based version has the database deployed on the cloud, and will transfer the
-raw data of the instrument to the cloud storage in the background.
+raw data of the instrument to the cloud storage in the background by ``LoggerHUB``.
 
 
 Overview
 ========
 
-.. image:: _static/nexuslims_logger_gcp.png
+.. image:: _static/nexuslims_logger_hub.png
     :width: 450
     :align: center
 
 
-NexusLIMS-Logger records the session information in MySQL DB, which is deployed on GCP (
+``LoggerHUB`` records the session information in MySQL DB, which is deployed on GCP (
 Google Cloud Platform).
 The communication is through a thin web app layer wrapping necessary database transactions
 and exposing APIs. After the session is started, a file transfer thread starts. It watches file
 changes of the instrument output folders periodically and uploaded the file to the GCP
 cloud storage when there is difference detected. The difference is compared with
-the MD5 checksum of the file content. The NexusLIMS-Logger should have write access
-of the corresponding bucket on the cloud. When the session is closed by the user, NexusLIMS-Logger
+the MD5 checksum of the file content.
+
+``LoggerHUB`` uses a GCP service account should have write access
+of the corresponding bucket on the cloud. When the session is closed by the user, ``LogerHUB``
 will record the timestamp and mark the status in the database. Additionally, the file
 transfer thread is stopped, and a final file transfer job is performed to ensure all
 data belonging to this session is transferred to the cloud storage.
+
+Users will interact with ``LoggerTEM``. ``LoggerTEM``/``LoggerHUB`` follows a classical
+client/server model.
 
 
 
