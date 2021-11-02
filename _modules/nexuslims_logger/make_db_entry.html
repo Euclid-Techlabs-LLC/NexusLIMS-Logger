@@ -63,7 +63,6 @@
 <span class="c1"># the Windows XP-based microscope PCs. Using this version of Python with</span>
 <span class="c1"># pyinstaller 3.5 seems to work on the 642 Titan</span>
 
-<span class="kn">import</span> <span class="nn">argparse</span>
 <span class="kn">import</span> <span class="nn">contextlib</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">pathlib</span>
@@ -169,7 +168,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">session_note</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">db_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;database_relpath&quot;</span><span class="p">]))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;networddrive_password&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;networddrive_password&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;networkdrive_password&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;networkdrive_password&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">full_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drive_letter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cpu_name</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">node</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -289,7 +288,7 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        mount_point : str</span>
-<span class="sd">            The mount point on the netword drive. The default points to the</span>
+<span class="sd">            The mount point on the network drive. The default points to the</span>
 <span class="sd">            `self.db_path`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -333,7 +332,7 @@
         <span class="k">if</span> <span class="n">do_mount</span><span class="p">:</span>
             <span class="n">workgroup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;networkdrive_workgroup&quot;</span><span class="p">)</span>
             <span class="n">username</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;networkdrive_username&quot;</span><span class="p">)</span>
-            <span class="n">password</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;networddrive_password&quot;</span><span class="p">)</span>
+            <span class="n">password</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;networkdrive_password&quot;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
                 <span class="n">mount_command</span> <span class="o">=</span> <span class="s1">&#39;net use </span><span class="si">{}</span><span class="s1"> </span><span class="se">\\\\</span><span class="si">{}</span><span class="se">\\</span><span class="si">{}</span><span class="s1"> &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drive_letter</span><span class="p">,</span>
@@ -889,6 +888,7 @@
 
 <div class="viewcode-block" id="cmdline_args"><a class="viewcode-back" href="../../api/nexuslims_logger.html#nexuslims_logger.make_db_entry.cmdline_args">[docs]</a><span class="k">def</span> <span class="nf">cmdline_args</span><span class="p">():</span>
     <span class="c1"># Make parser object</span>
+    <span class="kn">import</span> <span class="nn">argparse</span>
     <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;This program will mount the nexuslims directory</span>
 <span class="s2">                       on CFS2E, connect to the nexuslims_db.sqlite</span>
@@ -1002,7 +1002,7 @@
       &copy;2021, Euclid Techlabs, NIST ODI.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.2.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
