@@ -1,7 +1,6 @@
 import getpass
 import json
 import os
-import pathlib
 import sys
 import tkinter as tk
 from collections import UserDict
@@ -34,13 +33,15 @@ def validate_config(config):
 
     for k in keys_non_null:
         if not config.get(k):
-            raise ValueError(f"Config is NOT valid: entry `{k}` is not present or Null.")
+            raise ValueError(
+                "Config is NOT valid: entry `{}` is not present or Null.".format(k)
+            )
 
     return True
 
 
 def main():
-    ### check singleton
+    # check singleton
     try:
         sing = check_singleton()
     except OSError as e:
@@ -58,15 +59,15 @@ def main():
         tk.messagebox.showerror(parent=root, title="Error", message=message)
         sys.exit(0)
 
-
-    ### config
+    # config
     # The setting config will look for settings from environment variable first.
     # If not exist, it will read from `$HOME/nexuslims/gui/config.json` as fallback.
 
     config = _Config()
 
     try:
-        config_fn = os.path.join(pathlib.Path.home(), "nexuslims", "gui", "config.json")
+        config_fn = os.path.join(
+            os.path.expanduser("~"), "nexuslims", "gui", "config.json")
         config.update(json.loads(open(config_fn).read()))
     except:
         pass
@@ -80,18 +81,17 @@ def main():
         tk.messagebox.showerror(parent=root, title="Error", message=str(e))
         sys.exit(0)
 
-    ### user
+    # user
     login = getpass.getuser()
 
-    ### logger window
+    # logger window
     dbdl = DBSessionLogger(config=config, user=login, verbosity=2)
     sres = ScreenRes(dbdl)
 
-    ### main app
+    # main app
     root = MainApp(dbdl, screen_res=sres)
     root.protocol("WM_DELETE_WINDOW", root.on_closing)
     root.mainloop()
-
 
 
 if __name__ == "__main__":

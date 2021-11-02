@@ -30,7 +30,6 @@
 # the Windows XP-based microscope PCs. Using this version of Python with
 # pyinstaller 3.5 seems to work on the 642 Titan
 
-import argparse
 import contextlib
 import os
 import pathlib
@@ -136,7 +135,7 @@ class DBSessionLogger:
         self.session_note = ""
 
         self.db_path = str(pathlib.Path(config["database_relpath"]))
-        self.password = config["networddrive_password"] if config["networddrive_password"] else None
+        self.password = config["networkdrive_password"] if config["networkdrive_password"] else None
         self.full_path = os.path.join(self.drive_letter, self.db_name)
         self.cpu_name = platform.node().split('.')[0]
 
@@ -256,7 +255,7 @@ class DBSessionLogger:
         Parameters
         ----------
         mount_point : str
-            The mount point on the netword drive. The default points to the
+            The mount point on the network drive. The default points to the
             `self.db_path`.
         """
 
@@ -300,7 +299,7 @@ class DBSessionLogger:
         if do_mount:
             workgroup = self.config.get("networkdrive_workgroup")
             username = self.config.get("networkdrive_username")
-            password = self.config.get("networddrive_password")
+            password = self.config.get("networkdrive_password")
 
             if sys.platform == "win32":
                 mount_command = 'net use {} \\\\{}\\{} '.format(self.drive_letter,
@@ -856,6 +855,7 @@ class DBSessionLogger:
 
 def cmdline_args():
     # Make parser object
+    import argparse
     p = argparse.ArgumentParser(
         description="""This program will mount the nexuslims directory
                        on CFS2E, connect to the nexuslims_db.sqlite
