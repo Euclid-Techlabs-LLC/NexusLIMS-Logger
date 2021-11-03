@@ -5,8 +5,8 @@ import sys
 import tkinter as tk
 from collections import UserDict
 
-from .db_logger_gui import MainApp, ScreenRes, check_singleton
-from .make_db_entry import DBSessionLogger
+from db_logger_gui import MainApp, ScreenRes, check_singleton
+from make_db_entry import DBSessionLogger
 
 
 class _Config(UserDict):

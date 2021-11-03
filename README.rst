@@ -20,7 +20,7 @@ to store data.  The required information is as follows::
         "networkdrive_hostname": "192.168.0.166",
         "networkdrive_workgroup": "",
         "networkdrive_username": "",
-        "networddrive_password": "",
+        "networkdrive_password": "",
         "daq_relpath": "TEMdata/daq"
     }
 
