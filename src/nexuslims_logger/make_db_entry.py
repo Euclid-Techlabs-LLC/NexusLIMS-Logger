@@ -35,8 +35,8 @@ import os
 import pathlib
 import platform
 import queue
-import random
-import shutil
+# import random
+# import shutil
 import socket
 import sqlite3
 import string
@@ -759,29 +759,29 @@ class DBSessionLogger:
 
         return True
 
-    def _copydata_setup(self, thread_queue=None, exit_queue=None):
-        """
-        copydata routine:
-        1) mount network share.
-        """
+    # def _copydata_setup(self, thread_queue=None, exit_queue=None):
+    #     """
+    #     copydata routine:
+    #     1) mount network share.
+    #     """
 
-        try:
-            self.check_exit_queue(thread_queue, exit_queue)
-            self.log('running `mount_network_share()`', 2)
-            self.mount_network_share(mount_point=self.config["daq_relpath"])
-        except Exception as e:
-            if thread_queue:
-                thread_queue.put(e)
-            self.log("Could not mount the network share holding the "
-                     "database. Details:", -1)
-            self.log_exception(e)
-            return False
-        if thread_queue:
-            self.progress_num = 1
-            thread_queue.put(('Mounted network share', self.progress_num))
-            self.progress_num += 1
+    #     try:
+    #         self.check_exit_queue(thread_queue, exit_queue)
+    #         self.log('running `mount_network_share()`', 2)
+    #         self.mount_network_share(mount_point=self.config["daq_relpath"])
+    #     except Exception as e:
+    #         if thread_queue:
+    #             thread_queue.put(e)
+    #         self.log("Could not mount the network share holding the "
+    #                  "database. Details:", -1)
+    #         self.log_exception(e)
+    #         return False
+    #     if thread_queue:
+    #         self.progress_num = 1
+    #         thread_queue.put(('Mounted network share', self.progress_num))
+    #         self.progress_num += 1
 
-        return True
+    #     return True
 
     def db_logger_teardown(self, thread_queue=None, exit_queue=None):
         """
@@ -811,46 +811,46 @@ class DBSessionLogger:
         self.log('Finished unmounting network share', 2)
         return True
 
-    def _copydata(self, srcdir='mock'):
-        """ Take a data file randomly from **mock** data folder,
-        copy it to ``filestore_path`` of this instument, to mock the
-        behavior of generating experiment data.
-        """
+    # def _copydata(self, srcdir='mock'):
+    #     """ Take a data file randomly from **mock** data folder,
+    #     copy it to ``filestore_path`` of this instument, to mock the
+    #     behavior of generating experiment data.
+    #     """
 
-        src_dir = os.path.join(self.drive_letter, srcdir)
-        dst_dir = os.path.join(self.drive_letter, self.filestore_path)
-        if not os.path.isdir(dst_dir):
-            os.makedirs(dst_dir)
+    #     src_dir = os.path.join(self.drive_letter, srcdir)
+    #     dst_dir = os.path.join(self.drive_letter, self.filestore_path)
+    #     if not os.path.isdir(dst_dir):
+    #         os.makedirs(dst_dir)
 
-        datafiles = [f for f in os.listdir(src_dir) if not f.startswith('.')]
-        src_file = random.choice(datafiles)
-        suffix = src_file.split('.')[-1]
-        timestamp = datetime.strftime(datetime.now(), "%y%m%d_%H%M%S")
-        dst_file = '%s.%s' % (timestamp, suffix)
+    #     datafiles = [f for f in os.listdir(src_dir) if not f.startswith('.')]
+    #     src_file = random.choice(datafiles)
+    #     suffix = src_file.split('.')[-1]
+    #     timestamp = datetime.strftime(datetime.now(), "%y%m%d_%H%M%S")
+    #     dst_file = '%s.%s' % (timestamp, suffix)
 
-        logstr = 'COPY {} --> {}'.format(
-            os.path.join(src_dir, src_file),
-            os.path.join(dst_dir, dst_file)
-        )
+    #     logstr = 'COPY {} --> {}'.format(
+    #         os.path.join(src_dir, src_file),
+    #         os.path.join(dst_dir, dst_file)
+    #     )
 
-        try:
-            shutil.copy(os.path.join(src_dir, src_file),
-                        os.path.join(dst_dir, dst_file))
-            self.log(logstr, 2)
-        except Exception as e:
-            self.log('Failed to ' + logstr, -1)
-            self.log_exception(e)
+    #     try:
+    #         shutil.copy(os.path.join(src_dir, src_file),
+    #                     os.path.join(dst_dir, dst_file))
+    #         self.log(logstr, 2)
+    #     except Exception as e:
+    #         self.log('Failed to ' + logstr, -1)
+    #         self.log_exception(e)
 
-    def copydata(self, thread_queue=None, exit_queue=None):
-        """copy a data file from mock folder to instument ``filestore_path``.
+    # def copydata(self, thread_queue=None, exit_queue=None):
+    #     """copy a data file from mock folder to instument ``filestore_path``.
 
-        Returns True if successful, False if not
-        """
-        self.check_exit_queue(thread_queue, exit_queue)
-        if self._copydata_setup(thread_queue, exit_queue):
-            self._copydata()
-            self.db_logger_teardown(thread_queue, exit_queue)
-            return True
+    #     Returns True if successful, False if not
+    #     """
+    #     self.check_exit_queue(thread_queue, exit_queue)
+    #     if self._copydata_setup(thread_queue, exit_queue):
+    #         self._copydata()
+    #         self.db_logger_teardown(thread_queue, exit_queue)
+    #         return True
 
 
 def cmdline_args():

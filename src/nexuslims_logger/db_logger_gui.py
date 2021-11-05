@@ -202,8 +202,7 @@ class MainApp(Tk):
 
         self.tooltip_font = "TkDefaultFont"
         self.info_font = 'TkDefaultFont 16 bold'
-        #self.geometry(self.screen_res.get_center_geometry_string(350, 530))
-        self.geometry(self.screen_res.get_center_geometry_string(400, 650))
+        self.geometry(self.screen_res.get_center_geometry_string(350, 530))
         self.minsize(1, 1)
         self.maxsize(3840, 1170)
         self.resizable(1, 1)
@@ -305,7 +304,7 @@ class MainApp(Tk):
         self.end_button = Button(self.button_frame,
                                  # takefocus="",
                                  text="End session",
-                                 padx=10, pady=10,
+                                 padx=2.7, pady=10,
                                  state=DISABLED,
                                  compound=LEFT,
                                  command=self.session_end,
@@ -336,17 +335,17 @@ class MainApp(Tk):
                                  image=self.note_icon)
 
         self.note_button.config(fg='black', font=('kDefaultFont',12,'bold'), relief=RAISED)
-        self.copy_icon =PhotoImage(file=resource_path('copy.png'))
-        self.copydata_button = Button(
-            self.button_frame,
-            text=" Copy Data ",
-            padx=10, pady=10,
-            state=DISABLED,
-            compound=LEFT,
-            command=self.db_logger.copydata,
-            image=self.copy_icon
-        )
-        self.copydata_button.config(fg='black', font=('kDefaultFont',16,'bold'),relief=RAISED)
+        # self.copy_icon =PhotoImage(file=resource_path('copy.png'))
+        # self.copydata_button = Button(
+        #     self.button_frame,
+        #     text=" Copy Data ",
+        #     padx=10, pady=10,
+        #     state=DISABLED,
+        #     compound=LEFT,
+        #     command=self.db_logger.copydata,
+        #     image=self.copy_icon
+        # )
+        # self.copydata_button.config(fg='black', font=('kDefaultFont',16,'bold'),relief=RAISED)
 
         # grid the Toplevel window contents
         self.logo_label.grid(row=0, column=0, sticky=N, pady=(15, 0))
@@ -359,10 +358,10 @@ class MainApp(Tk):
 
         # grid the button_frame contents
         self.button_frame.grid(row=3, column=0, sticky=S, pady=(15, 5))
-        self.end_button.grid(row=0, column=1, sticky=S, pady=5)
-        self.log_button.grid(row=1, column=1, sticky=S, pady=5)
-        self.note_button.grid(row=1, column=0, sticky=S, pady=5)
-        self.copydata_button.grid(row=0, column=0, sticky=S, pady=5)
+        self.end_button.grid(row=0, column=0, columnspan=2, sticky=EW)
+        self.log_button.grid(row=1, column=0, )
+        self.note_button.grid(row=1, column=1, )
+        # self.copydata_button.grid(row=0, column=0, sticky=S, pady=5)
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
@@ -496,7 +495,7 @@ class MainApp(Tk):
 
         # activate the "end session" button
         self.end_button.configure(state=ACTIVE)
-        self.copydata_button.configure(state=ACTIVE)
+        # self.copydata_button.configure(state=ACTIVE)
 
     def switch_gui_to_end(self):
         # Remove the setup_frame contents
@@ -509,7 +508,7 @@ class MainApp(Tk):
         self.end_button.configure(state=DISABLED)
 
         # deactivate the "copy data" button
-        self.copydata_button.configure(state=DISABLED)
+        # self.copydata_button.configure(state=DISABLED)
 
     def session_end(self):
         # signal the startup thread to exit (if it's still running)
