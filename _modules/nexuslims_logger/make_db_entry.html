@@ -68,8 +68,8 @@
 <span class="kn">import</span> <span class="nn">pathlib</span>
 <span class="kn">import</span> <span class="nn">platform</span>
 <span class="kn">import</span> <span class="nn">queue</span>
-<span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="c1"># import random</span>
+<span class="c1"># import shutil</span>
 <span class="kn">import</span> <span class="nn">socket</span>
 <span class="kn">import</span> <span class="nn">sqlite3</span>
 <span class="kn">import</span> <span class="nn">string</span>
@@ -792,29 +792,29 @@
 
         <span class="k">return</span> <span class="kc">True</span></div>
 
-    <span class="k">def</span> <span class="nf">_copydata_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thread_queue</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exit_queue</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        copydata routine:</span>
-<span class="sd">        1) mount network share.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="c1"># def _copydata_setup(self, thread_queue=None, exit_queue=None):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     copydata routine:</span>
+    <span class="c1">#     1) mount network share.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
 
-        <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">check_exit_queue</span><span class="p">(</span><span class="n">thread_queue</span><span class="p">,</span> <span class="n">exit_queue</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s1">&#39;running `mount_network_share()`&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mount_network_share</span><span class="p">(</span><span class="n">mount_point</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;daq_relpath&quot;</span><span class="p">])</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">thread_queue</span><span class="p">:</span>
-                <span class="n">thread_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Could not mount the network share holding the &quot;</span>
-                     <span class="s2">&quot;database. Details:&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="n">thread_queue</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">progress_num</span> <span class="o">=</span> <span class="mi">1</span>
-            <span class="n">thread_queue</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="s1">&#39;Mounted network share&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_num</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">progress_num</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="c1">#     try:</span>
+    <span class="c1">#         self.check_exit_queue(thread_queue, exit_queue)</span>
+    <span class="c1">#         self.log(&#39;running `mount_network_share()`&#39;, 2)</span>
+    <span class="c1">#         self.mount_network_share(mount_point=self.config[&quot;daq_relpath&quot;])</span>
+    <span class="c1">#     except Exception as e:</span>
+    <span class="c1">#         if thread_queue:</span>
+    <span class="c1">#             thread_queue.put(e)</span>
+    <span class="c1">#         self.log(&quot;Could not mount the network share holding the &quot;</span>
+    <span class="c1">#                  &quot;database. Details:&quot;, -1)</span>
+    <span class="c1">#         self.log_exception(e)</span>
+    <span class="c1">#         return False</span>
+    <span class="c1">#     if thread_queue:</span>
+    <span class="c1">#         self.progress_num = 1</span>
+    <span class="c1">#         thread_queue.put((&#39;Mounted network share&#39;, self.progress_num))</span>
+    <span class="c1">#         self.progress_num += 1</span>
 
-        <span class="k">return</span> <span class="kc">True</span>
+    <span class="c1">#     return True</span>
 
 <div class="viewcode-block" id="DBSessionLogger.db_logger_teardown"><a class="viewcode-back" href="../../api/nexuslims_logger.html#nexuslims_logger.make_db_entry.DBSessionLogger.db_logger_teardown">[docs]</a>    <span class="k">def</span> <span class="nf">db_logger_teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thread_queue</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exit_queue</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -842,48 +842,48 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">progress_num</span> <span class="o">+=</span> <span class="mi">1</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s1">&#39;Finished unmounting network share&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="k">return</span> <span class="kc">True</span></div>
+        <span class="k">return</span> <span class="kc">True</span></div></div>
 
-    <span class="k">def</span> <span class="nf">_copydata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">srcdir</span><span class="o">=</span><span class="s1">&#39;mock&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Take a data file randomly from **mock** data folder,</span>
-<span class="sd">        copy it to ``filestore_path`` of this instument, to mock the</span>
-<span class="sd">        behavior of generating experiment data.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="c1"># def _copydata(self, srcdir=&#39;mock&#39;):</span>
+    <span class="c1">#     &quot;&quot;&quot; Take a data file randomly from **mock** data folder,</span>
+    <span class="c1">#     copy it to ``filestore_path`` of this instument, to mock the</span>
+    <span class="c1">#     behavior of generating experiment data.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
 
-        <span class="n">src_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drive_letter</span><span class="p">,</span> <span class="n">srcdir</span><span class="p">)</span>
-        <span class="n">dst_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drive_letter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filestore_path</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dst_dir</span><span class="p">):</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dst_dir</span><span class="p">)</span>
+    <span class="c1">#     src_dir = os.path.join(self.drive_letter, srcdir)</span>
+    <span class="c1">#     dst_dir = os.path.join(self.drive_letter, self.filestore_path)</span>
+    <span class="c1">#     if not os.path.isdir(dst_dir):</span>
+    <span class="c1">#         os.makedirs(dst_dir)</span>
 
-        <span class="n">datafiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">src_dir</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)]</span>
-        <span class="n">src_file</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">datafiles</span><span class="p">)</span>
-        <span class="n">suffix</span> <span class="o">=</span> <span class="n">src_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="s2">&quot;%y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
-        <span class="n">dst_file</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">.</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
+    <span class="c1">#     datafiles = [f for f in os.listdir(src_dir) if not f.startswith(&#39;.&#39;)]</span>
+    <span class="c1">#     src_file = random.choice(datafiles)</span>
+    <span class="c1">#     suffix = src_file.split(&#39;.&#39;)[-1]</span>
+    <span class="c1">#     timestamp = datetime.strftime(datetime.now(), &quot;%y%m%d_%H%M%S&quot;)</span>
+    <span class="c1">#     dst_file = &#39;%s.%s&#39; % (timestamp, suffix)</span>
 
-        <span class="n">logstr</span> <span class="o">=</span> <span class="s1">&#39;COPY </span><span class="si">{}</span><span class="s1"> --&gt; </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src_dir</span><span class="p">,</span> <span class="n">src_file</span><span class="p">),</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dst_dir</span><span class="p">,</span> <span class="n">dst_file</span><span class="p">)</span>
-        <span class="p">)</span>
+    <span class="c1">#     logstr = &#39;COPY {} --&gt; {}&#39;.format(</span>
+    <span class="c1">#         os.path.join(src_dir, src_file),</span>
+    <span class="c1">#         os.path.join(dst_dir, dst_file)</span>
+    <span class="c1">#     )</span>
 
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src_dir</span><span class="p">,</span> <span class="n">src_file</span><span class="p">),</span>
-                        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dst_dir</span><span class="p">,</span> <span class="n">dst_file</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">logstr</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s1">&#39;Failed to &#39;</span> <span class="o">+</span> <span class="n">logstr</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="c1">#     try:</span>
+    <span class="c1">#         shutil.copy(os.path.join(src_dir, src_file),</span>
+    <span class="c1">#                     os.path.join(dst_dir, dst_file))</span>
+    <span class="c1">#         self.log(logstr, 2)</span>
+    <span class="c1">#     except Exception as e:</span>
+    <span class="c1">#         self.log(&#39;Failed to &#39; + logstr, -1)</span>
+    <span class="c1">#         self.log_exception(e)</span>
 
-<div class="viewcode-block" id="DBSessionLogger.copydata"><a class="viewcode-back" href="../../api/nexuslims_logger.html#nexuslims_logger.make_db_entry.DBSessionLogger.copydata">[docs]</a>    <span class="k">def</span> <span class="nf">copydata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thread_queue</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exit_queue</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;copy a data file from mock folder to instument ``filestore_path``.</span>
+    <span class="c1"># def copydata(self, thread_queue=None, exit_queue=None):</span>
+    <span class="c1">#     &quot;&quot;&quot;copy a data file from mock folder to instument ``filestore_path``.</span>
 
-<span class="sd">        Returns True if successful, False if not</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_exit_queue</span><span class="p">(</span><span class="n">thread_queue</span><span class="p">,</span> <span class="n">exit_queue</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_copydata_setup</span><span class="p">(</span><span class="n">thread_queue</span><span class="p">,</span> <span class="n">exit_queue</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_copydata</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">db_logger_teardown</span><span class="p">(</span><span class="n">thread_queue</span><span class="p">,</span> <span class="n">exit_queue</span><span class="p">)</span>
-            <span class="k">return</span> <span class="kc">True</span></div></div>
+    <span class="c1">#     Returns True if successful, False if not</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     self.check_exit_queue(thread_queue, exit_queue)</span>
+    <span class="c1">#     if self._copydata_setup(thread_queue, exit_queue):</span>
+    <span class="c1">#         self._copydata()</span>
+    <span class="c1">#         self.db_logger_teardown(thread_queue, exit_queue)</span>
+    <span class="c1">#         return True</span>
 
 
 <div class="viewcode-block" id="cmdline_args"><a class="viewcode-back" href="../../api/nexuslims_logger.html#nexuslims_logger.make_db_entry.cmdline_args">[docs]</a><span class="k">def</span> <span class="nf">cmdline_args</span><span class="p">():</span>

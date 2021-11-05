@@ -235,8 +235,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tooltip_font</span> <span class="o">=</span> <span class="s2">&quot;TkDefaultFont&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">info_font</span> <span class="o">=</span> <span class="s1">&#39;TkDefaultFont 16 bold&#39;</span>
-        <span class="c1">#self.geometry(self.screen_res.get_center_geometry_string(350, 530))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">screen_res</span><span class="o">.</span><span class="n">get_center_geometry_string</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="mi">650</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">screen_res</span><span class="o">.</span><span class="n">get_center_geometry_string</span><span class="p">(</span><span class="mi">350</span><span class="p">,</span> <span class="mi">530</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">minsize</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maxsize</span><span class="p">(</span><span class="mi">3840</span><span class="p">,</span> <span class="mi">1170</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resizable</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -338,7 +337,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">end_button</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">button_frame</span><span class="p">,</span>
                                  <span class="c1"># takefocus=&quot;&quot;,</span>
                                  <span class="n">text</span><span class="o">=</span><span class="s2">&quot;End session&quot;</span><span class="p">,</span>
-                                 <span class="n">padx</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                 <span class="n">padx</span><span class="o">=</span><span class="mf">2.7</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
                                  <span class="n">state</span><span class="o">=</span><span class="n">DISABLED</span><span class="p">,</span>
                                  <span class="n">compound</span><span class="o">=</span><span class="n">LEFT</span><span class="p">,</span>
                                  <span class="n">command</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session_end</span><span class="p">,</span>
@@ -369,17 +368,17 @@
                                  <span class="n">image</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">note_icon</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">note_button</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">fg</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;kDefaultFont&#39;</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="s1">&#39;bold&#39;</span><span class="p">),</span> <span class="n">relief</span><span class="o">=</span><span class="n">RAISED</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">copy_icon</span> <span class="o">=</span><span class="n">PhotoImage</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">resource_path</span><span class="p">(</span><span class="s1">&#39;copy.png&#39;</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">copydata_button</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">button_frame</span><span class="p">,</span>
-            <span class="n">text</span><span class="o">=</span><span class="s2">&quot; Copy Data &quot;</span><span class="p">,</span>
-            <span class="n">padx</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-            <span class="n">state</span><span class="o">=</span><span class="n">DISABLED</span><span class="p">,</span>
-            <span class="n">compound</span><span class="o">=</span><span class="n">LEFT</span><span class="p">,</span>
-            <span class="n">command</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db_logger</span><span class="o">.</span><span class="n">copydata</span><span class="p">,</span>
-            <span class="n">image</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">copy_icon</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">copydata_button</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">fg</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;kDefaultFont&#39;</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="s1">&#39;bold&#39;</span><span class="p">),</span><span class="n">relief</span><span class="o">=</span><span class="n">RAISED</span><span class="p">)</span>
+        <span class="c1"># self.copy_icon =PhotoImage(file=resource_path(&#39;copy.png&#39;))</span>
+        <span class="c1"># self.copydata_button = Button(</span>
+        <span class="c1">#     self.button_frame,</span>
+        <span class="c1">#     text=&quot; Copy Data &quot;,</span>
+        <span class="c1">#     padx=10, pady=10,</span>
+        <span class="c1">#     state=DISABLED,</span>
+        <span class="c1">#     compound=LEFT,</span>
+        <span class="c1">#     command=self.db_logger.copydata,</span>
+        <span class="c1">#     image=self.copy_icon</span>
+        <span class="c1"># )</span>
+        <span class="c1"># self.copydata_button.config(fg=&#39;black&#39;, font=(&#39;kDefaultFont&#39;,16,&#39;bold&#39;),relief=RAISED)</span>
 
         <span class="c1"># grid the Toplevel window contents</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logo_label</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="n">N</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
@@ -392,10 +391,10 @@
 
         <span class="c1"># grid the button_frame contents</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">button_frame</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="n">S</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="n">S</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="n">S</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">note_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="n">S</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">copydata_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="n">S</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">columnspan</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="n">EW</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">note_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="p">)</span>
+        <span class="c1"># self.copydata_button.grid(row=0, column=0, sticky=S, pady=5)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">columnconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rowconfigure</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -528,8 +527,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">running_Label_3</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
 
         <span class="c1"># activate the &quot;end session&quot; button</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">ACTIVE</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">copydata_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">ACTIVE</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">ACTIVE</span><span class="p">)</span></div>
+        <span class="c1"># self.copydata_button.configure(state=ACTIVE)</span>
 
 <div class="viewcode-block" id="MainApp.switch_gui_to_end"><a class="viewcode-back" href="../../api/nexuslims_logger.html#nexuslims_logger.db_logger_gui.MainApp.switch_gui_to_end">[docs]</a>    <span class="k">def</span> <span class="nf">switch_gui_to_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Remove the setup_frame contents</span>
@@ -539,10 +538,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">setup_frame</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
         <span class="c1"># deactivate the &quot;end session&quot; button</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">DISABLED</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">DISABLED</span><span class="p">)</span></div>
 
         <span class="c1"># deactivate the &quot;copy data&quot; button</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">copydata_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">DISABLED</span><span class="p">)</span></div>
+        <span class="c1"># self.copydata_button.configure(state=DISABLED)</span>
 
 <div class="viewcode-block" id="MainApp.session_end"><a class="viewcode-back" href="../../api/nexuslims_logger.html#nexuslims_logger.db_logger_gui.MainApp.session_end">[docs]</a>    <span class="k">def</span> <span class="nf">session_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># signal the startup thread to exit (if it&#39;s still running)</span>
