@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Administrator Documentation" href="admin_doc.html" />
-    <link rel="prev" title="NexusLIMS-Logger" href="readme.html" />
+    <link rel="prev" title="NexusLIMS-Logger-Local" href="readme.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -59,7 +59,7 @@ GUI does not perform any actions during this stage, and is simply waiting for th
 Before the <code class="docutils literal notranslate"><span class="pre">End</span> <span class="pre">session</span></code> button is clicked, the user has the option to add notes to the active session by clicking
 the <code class="docutils literal notranslate"><span class="pre">Add</span> <span class="pre">Session</span> <span class="pre">Note</span></code> button.</p>
 <p>When the user has finished collecting data, they will click the <code class="docutils literal notranslate"><span class="pre">End</span> <span class="pre">session</span></code> button in the window. This will trigger
-the application to label the current experiment as finished in the <a class="reference external" href="https://euclid-techlabs-llc.github.io/NexusLIMS/database.html">database</a>,
+the application to label the current experiment as finished in the database,
 and the Logger GUI will close by itself after a short delay.</p>
 <section id="what-if-something-goes-wrong">
 <h3>What if something goes wrong?<a class="headerlink" href="#what-if-something-goes-wrong" title="Permalink to this headline">¶</a></h3>
@@ -107,7 +107,7 @@ computer. In this way, a computer name gets mapped to an instrument persistent
 identifier (PID) and this value is stored for later use. Directions for finding
 your computers <cite>“hostname”</cite> can be found <a class="reference external" href="https://drexel.edu/it/help/a-z/computer-names/">here</a>.</p>
 <p>If the <cite>“hostname”</cite> of the user’s computer does not match any computer names
-specified in the <a class="reference external" href="https://euclid-techlabs-llc.github.io/NexusLIMS/database.html">database</a>,
+specified in the database,
 the Logger GUI will be unable to map the computer name to an instrument persistent identifier (PID)
 and an error message will appear.</p>
 </section>
@@ -165,7 +165,7 @@ database using a query very similar to that in <a class="reference internal" hre
 After verifying that this record was inserted correctly, the application
 then updates the status of both the <code class="docutils literal notranslate"><span class="pre">'START'</span></code> and <code class="docutils literal notranslate"><span class="pre">'END'</span></code> logs for this
 session from <code class="docutils literal notranslate"><span class="pre">'WAITING_FOR_END'</span></code> to <code class="docutils literal notranslate"><span class="pre">'TO_BE_BUILT'</span></code>. This status indicates
-to the <a class="reference external" href="https://euclid-techlabs-llc.github.io/NexusLIMS/record_building.html">record builder</a>, that it should go ahead to
+to the record builder, that it should go ahead to
 actually build and upload the record for this Experiment.</p>
 </section>
 <section id="cleaning-up">
@@ -178,7 +178,7 @@ to be run again by the next user that arrives to begin a new session.</p>
 </section>
 <section id="information-collected">
 <h2>Information collected<a class="headerlink" href="#information-collected" title="Permalink to this headline">¶</a></h2>
-<p>As described above and in the <a class="reference external" href="https://euclid-techlabs-llc.github.io/NexusLIMS/database.html">database</a>, the
+<p>As described above and in the database, the
 Logger GUI collects the bare minimum amount of information required
 to compile an Experiment’s record. The values collected from the microscope
 computer that are recorded to the database with each log are:</p>
@@ -245,6 +245,7 @@ session has ended.</p></td>
 
 <h3>Navigation</h3>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="logger_versions.html">Logger GUI Versions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="readme.html">Overview &amp; Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Logger GUI</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-use-the-logger-gui">How to use the Logger GUI</a></li>
@@ -263,7 +264,7 @@ session has ended.</p></td>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="readme.html" title="previous chapter">NexusLIMS-Logger</a></li>
+      <li>Previous: <a href="readme.html" title="previous chapter">NexusLIMS-Logger-Local</a></li>
       <li>Next: <a href="admin_doc.html" title="next chapter">Administrator Documentation</a></li>
   </ul></li>
 </ul>
@@ -294,7 +295,7 @@ session has ended.</p></td>
       &copy;2021, Euclid Techlabs, NIST ODI.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.2.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

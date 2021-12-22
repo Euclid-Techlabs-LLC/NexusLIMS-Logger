@@ -32,7 +32,7 @@ Before the ``End session`` button is clicked, the user has the option to add not
 the ``Add Session Note`` button.
 
 When the user has finished collecting data, they will click the ``End session`` button in the window. This will trigger
-the application to label the current experiment as finished in the `database <https://euclid-techlabs-llc.github.io/NexusLIMS/database.html>`_,
+the application to label the current experiment as finished in the database,
 and the Logger GUI will close by itself after a short delay.
 
 What if something goes wrong?
@@ -98,7 +98,7 @@ identifier (PID) and this value is stored for later use. Directions for finding
 your computers `"hostname"` can be found `here <https://drexel.edu/it/help/a-z/computer-names/>`_.
 
 If the `"hostname"` of the user's computer does not match any computer names 
-specified in the `database <https://euclid-techlabs-llc.github.io/NexusLIMS/database.html>`_,
+specified in the database,
 the Logger GUI will be unable to map the computer name to an instrument persistent identifier (PID)
 and an error message will appear.
 
@@ -168,7 +168,7 @@ database using a query very similar to that in `step 4 <step-4_>`_.
 After verifying that this record was inserted correctly, the application
 then updates the status of both the ``'START'`` and ``'END'`` logs for this
 session from ``'WAITING_FOR_END'`` to ``'TO_BE_BUILT'``. This status indicates
-to the `record builder <https://euclid-techlabs-llc.github.io/NexusLIMS/record_building.html>`_, that it should go ahead to
+to the record builder, that it should go ahead to
 actually build and upload the record for this Experiment.
 
 7. Cleaning up
@@ -182,7 +182,7 @@ to be run again by the next user that arrives to begin a new session.
 Information collected
 +++++++++++++++++++++
 
-As described above and in the `database <https://euclid-techlabs-llc.github.io/NexusLIMS/database.html>`_, the
+As described above and in the database, the
 Logger GUI collects the bare minimum amount of information required
 to compile an Experiment's record. The values collected from the microscope
 computer that are recorded to the database with each log are:

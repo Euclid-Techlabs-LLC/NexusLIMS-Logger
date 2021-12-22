@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Logger-GUI Versions &#8212; NexusLIMS-Logger  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="NexusLIMS-Logger-Local" href="readme.html" />
+    <link rel="prev" title="NexusLIMS-Logger" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="logger-gui-versions">
+<h1>Logger-GUI Versions<a class="headerlink" href="#logger-gui-versions" title="Permalink to this headline">¶</a></h1>
+<p>Logger-GUI is the general name for the collection of all Logger versions that were
+designed for different deployment scenarios.  Our Logger-GUI versions support deployments
+that are completely local, half local half cloud-based (useful when the control computer
+only has LAN connections but cloud features are desired by the user), and completely cloud-based
+(the control computer has access to the could platform through the World Wide Web).  All
+three versions are maintained in the same GitHub repository but reside in different branches
+to avoid confusion.</p>
+<section id="logger-local">
+<h2>Logger-local<a class="headerlink" href="#logger-local" title="Permalink to this headline">¶</a></h2>
+<p>Logger-local is designed for groups that are not ready to adopt a cloud platform yet.  This
+could be because the EM control computer does not have WWW access, cannot connect through LAN to
+a server or computer with WWW access, or the users want the benefit of the Logger-GUI without
+having to learn how to compute with cloud platforms.  A schematic of the Logger-local workflow is shown below.</p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="_images/logger_local_workflow.PNG"><img alt="Logger-local workflow" src="_images/logger_local_workflow.PNG" style="width: 50%;" /></a>
+</figure>
+</section>
+<section id="logger-gcp">
+<h2>Logger-gcp<a class="headerlink" href="#logger-gcp" title="Permalink to this headline">¶</a></h2>
+<p>Logger-gcp is designed for control PCs that are directly connected to WWW Internet.  This Logger
+version was developed with the Google Cloud Platform (gcp), but can be adapted to other cloud platforms
+with trivial modifications in the code.  Compared to Logger-local, the Logger-gcp operates with a few main differences;:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>The raw data and generated metadata are stored in Cloud Storage, instead of on the Network File Share (NFS)</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">SQLite</span></code> local database is replaced with <code class="docutils literal notranslate"><span class="pre">MySQL</span></code> running on the cloud, which is wrapped with a
+thin layer API using <code class="docutils literal notranslate"><span class="pre">Flask</span></code></p></li>
+<li><p>The Logger-gcp has the additional task of uploading raw data files to the Cloud Storage</p></li>
+</ol>
+</div></blockquote>
+<p>The interface of Logger-gcp is identical to the Logger-local.  However, the user is required to authenticate his or herself
+upon starting the program with Google authentication in a browser because the Logger-gcp will require written permission
+to the cloud storage buckets.</p>
+<p>For more information on installing and setting up the Logger-gcp, click <a class="reference external" href="https://nexuslims-logger.readthedocs.io/en/latest/installconfig.html">here</a>.</p>
+<blockquote>
+<div><p>A schematic of the Logger-gcp workflow is shown below.</p>
+</div></blockquote>
+<figure class="align-center">
+<a class="reference internal image-reference" href="_images/logger_gcp_workflow.PNG"><img alt="Logger-local workflow" src="_images/logger_gcp_workflow.PNG" style="width: 50%;" /></a>
+</figure>
+</section>
+<section id="logger-em-and-logger-hub">
+<h2>Logger-EM and Logger-Hub<a class="headerlink" href="#logger-em-and-logger-hub" title="Permalink to this headline">¶</a></h2>
+<p>For users who desire or require cloud connectivity but possess instrument control PC’s that are restricted to local network
+connections, a combination of the two above Logger components has been utilized, reffered to as <strong>Logger-EM</strong> and <strong>Logger-Hub</strong>.
+<strong>Logger-EM</strong> is installed and runs on the instrument control PC, which has an identical user interface as the Logger-gcp and
+Logger-local.  <strong>Logger-Hub</strong> is installed and runs on a different computer which is in the same local network as the instrument
+control PC, and must have access to the WWW and thus the Cloud platform.</p>
+<p>Logger-Hub needs to be started on the server/VM prior to opening the Logger on the instrument control PC and must be left
+open during the entire process.  The minature design of Logger-Hub allows virtually any computer with modern hardware to run
+the program.</p>
+<p>For security purposes, a service account of the user’s project must be created on GCP to be used for authenticatiion.  This
+is because users cannot authenticate using GCP on the instrument control PC without WWW connection.  Only the system admin
+needs to manage the cloud account from the computer running the Logger-Hub.</p>
+<p>For more information on installing and setting up the Logger-EM
+and Logger-Hub, click <a class="reference external" href="https://nexuslims-logger.readthedocs.io/en/logger-hub-dev/">here</a>.</p>
+<p>A schematic of the Logger-Hub workflow is shown below.</p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="_static/logger_hub_workflow.PNG"><img alt="Logger-local workflow" src="_static/logger_hub_workflow.PNG" style="width: 50%;" /></a>
+</figure>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NexusLIMS-Logger</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Logger GUI Versions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#logger-local">Logger-local</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#logger-gcp">Logger-gcp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#logger-em-and-logger-hub">Logger-EM and Logger-Hub</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Overview &amp; Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logger_gui.html">Logger GUI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="admin_doc.html">Administrator Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">Module Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">NexusLIMS-Logger</a></li>
+      <li>Next: <a href="readme.html" title="next chapter">NexusLIMS-Logger-Local</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Euclid Techlabs, NIST ODI.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/logger_versions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
