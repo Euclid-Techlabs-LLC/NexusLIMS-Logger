@@ -72,8 +72,8 @@ and Logger-Hub, click `here <https://nexuslims-logger.readthedocs.io/en/logger-h
 
 A schematic of the Logger-Hub workflow is shown below.
 
-..  figure:: _static/logger_hub_workflow.PNG
+..  figure:: _static/logger_hub_workflow.png
     :width: 50%
     :align: center
-    :alt: Logger-local workflow
+    :alt: Logger-EM Logger-Hub workflow
     :figclass: align-center
