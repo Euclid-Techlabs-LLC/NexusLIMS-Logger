@@ -3,6 +3,7 @@ import queue
 import sys
 import threading
 import time
+import sqlite3
 from datetime import datetime
 from tkinter import *
 from tkinter import messagebox, ttk
@@ -77,7 +78,6 @@ def format_date(dt, with_newline=True):
                              ("\n" if with_newline else " at ") +
                              "%I:%M:%S %p")
     return datestring
-
 
 class ScreenRes:
     def __init__(self, db_logger):
@@ -194,6 +194,10 @@ class MainApp(Tk):
         self.end_thread_exit_queue = queue.Queue()
         self.end_thread = None
 
+        if self.db_logger.last_entry_type == "END" :
+            self.old_note = ""
+        else:
+            self.old_note = self.db_logger.session_note
         self.screen_res = ScreenRes() if screen_res is None else screen_res
         self.style = ttk.Style()
         if sys.platform == "win32":
@@ -424,6 +428,7 @@ class MainApp(Tk):
                     # we set the session_id to the one that was previously
                     # found (and set the time accordingly, and only run the
                     # teardown instead of process_start
+
                     self.loading_pbar_length = 5.0
                     self.running_Label_1.configure(text='Continuing the last '
                                                         'session for the')
@@ -717,7 +722,7 @@ class PauseOrEndDialogue(Toplevel):
         self.response.set('end')
         self.destroy()
 
-    def click_pause(self):
+    def click_pause(self):       
         self.response.set('pause')
         self.destroy()
 
@@ -740,6 +745,7 @@ class HangingSessionDialog(Toplevel):
         self.protocol("WM_DELETE_WINDOW", self.destroy)
 
         self.bell()
+
 
         if db_logger.last_session_ts is not None:
             last_session_dt = datetime.strptime(db_logger.last_session_ts,
@@ -990,13 +996,12 @@ class NoteWindow(Toplevel):
         self.geometry(self.screen_res.get_center_geometry_string(450, 450))
         self.title('Add Note to the Current Session')
         self.parent = parent
-
-        # prepare some variables
+        # prepare some variables 
         self.old_note = self.parent.db_logger.session_note
-        self.old_note = self.old_note.replace("''", "'")
+        #self.old_note = parent.old_note
+        self.old_note = self.old_note.replace("''", "'") 
         self.note = StringVar()
         self.note.set(self.old_note)
-
         self.session_note = Text(self, width=40, height=10, wrap='word', font=("TkDefaultFont", 16))
         self.s_v = ttk.Scrollbar(self,
                                  orient=VERTICAL,
@@ -1081,12 +1086,30 @@ class NoteWindow(Toplevel):
             #Save the current session note in the text box, overwrite previous saved note
             self.note = self.session_note.get("1.0", END)
             #escape single quote by doubling it so it won't cause issues with sql insert_statement
-            self.note = self.note.replace("'", "''")
+            self.note = self.note.replace("'", "''") #this one in first
+            self.path = self.parent.db_logger.full_path
+            self.parent.db_logger.mount_network_share(mount_point = None)
+            con = sqlite3.connect(self.path)
+            cur = con.cursor()
+            last_query = "SELECT id_session_log FROM session_log " + \
+                         "WHERE instrument = " + \
+                         "'{}' ".format(self.parent.db_logger.instr_pid) + \
+                         "AND event_type = 'START' " + \
+                         "AND session_identifier = " + \
+                         "'{}'".format(self.parent.db_logger.session_id) + \
+                         "AND record_status = 'WAITING_FOR_END';"
+            r = cur.execute(last_query) 
+            results = r.fetchall()
+            self.last_start_id = results[-1][0]
+            cur.execute("UPDATE session_log SET session_note = ?  WHERE id_session_log = ? AND event_type = ? AND record_status = ?", (self.note, self.last_start_id,'START', 'WAITING_FOR_END'))
+            con.commit()
+            con.close()
+            self.parent.db_logger.umount_network_share()            
             if not (self.note == self.old_note):
                     self.old_note = self.note
                     #self.parent.notes = self.note
                     self.parent.db_logger.session_note = self.note
-
+                    
     def delete_note(self):
             #delete the current session note in the text box
             self.session_note.delete("1.0", END)

@@ -45,7 +45,6 @@ import sys
 from datetime import datetime
 from uuid import uuid4
 
-
 def get_drives():
     """
     Get the drive letters (uppercase) in current use by Windows
@@ -67,7 +66,6 @@ def get_drives():
         bitmask >>= 1
 
     return drives
-
 
 def get_free_drives():
     """
@@ -133,7 +131,6 @@ class DBSessionLogger:
         self.last_session_ts = None
         self.progress_num = 0
         self.session_note = ""
-
         self.db_path = str(pathlib.Path(config["database_relpath"]))
         self.password = config["networkdrive_password"] if config["networkdrive_password"] else None
         self.full_path = os.path.join(self.drive_letter, self.db_name)
@@ -148,7 +145,7 @@ class DBSessionLogger:
             self.log('Unused drives are: {}'.format(get_free_drives()), 2)
             self.log('First available drive letter is {}'.format(
                 self.drive_letter), 2)
-
+            
     def log(self, to_print, this_verbosity):
         """
         Log a message to the console, only printing if the given verbosity is
@@ -461,7 +458,7 @@ class DBSessionLogger:
         # Get last inserted line for this instrument that is not a record
         # generation (should be either a START or END)
         query_statement = 'SELECT event_type, session_identifier, ' \
-                          'id_session_log, timestamp FROM session_log WHERE ' \
+                          'id_session_log, session_note, timestamp FROM session_log WHERE ' \
                           'instrument = "{}" '.format(self.instr_pid) + \
                           'AND NOT event_type = "RECORD_GENERATION" ' + \
                           'ORDER BY timestamp DESC LIMIT 1'
@@ -482,7 +479,7 @@ class DBSessionLogger:
                         self.last_entry_type = "END"
                     else:
                         self.last_entry_type, self.last_session_id, \
-                        self.last_session_row_number, self.last_session_ts = row
+                        self.last_session_row_number, self.session_note, self.last_session_ts = row
                     if self.last_entry_type == "END":
                         self.log('Verified database consistency for the '
                                  '{}'.format(self.instr_schema_name), 1)
@@ -498,6 +495,8 @@ class DBSessionLogger:
                                  '{} '.format(self.instr_schema_name) +
                                  '(last entry [id_session_log = '
                                  '{}]'.format(self.last_session_row_number) +
+                                 '(with message [session_note = '
+                                 '{}]'.format(self.session_note) +
                                  ' was a "START")', 0)
                         if thread_queue:
                             thread_queue.put(('Database is inconsistent!',
@@ -906,3 +905,5 @@ def gui_end_callback(db_logger):
     db_logger.db_logger_setup()
     db_logger.process_end()
     db_logger.db_logger_teardown()
+
+
