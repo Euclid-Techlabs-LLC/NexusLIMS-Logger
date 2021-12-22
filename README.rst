@@ -1,6 +1,9 @@
-================
-NexusLIMS-Logger
-================
+======================
+NexusLIMS-Logger-Local
+======================
+
+Overview & Installation
+=======================
 
 
 Logger (TKinter) GUI branched off from original NexusLIMS repository.
@@ -24,9 +27,11 @@ to store data.  The required information is as follows::
         "daq_relpath": "TEMdata/daq"
     }
 
-``database_name``, ``database_relpath``, ``networkdrive_hostname`` and ``daq_relpath`` must have the values specified
-in the above example. ``networkdrive_workgroup`` and ``networkdrive_password`` are not required entities when the Logger GUI
-is installed but they can be configfured by administrators to be required. The ``networkdrive_username`` entity
+``database_name``, ``database_relpath``, and ``daq_relpath`` must have the values specified
+in the above example. ``networkdrive_hostname`` defines the IP address of the network drive 
+mounted by the Logger, which will be different for each user.  ``networkdrive_workgroup`` and
+``networkdrive_password`` are not required entities when the Logger GUI is installed but they
+can be configfured by administrators to be required. The ``networkdrive_username`` entity
 must be filled in prior to running the Logger GUI or the program will not run.
 
 There are two methods to run the Logger GUI: through a command line or as an executable file
@@ -34,7 +39,8 @@ There are two methods to run the Logger GUI: through a command line or as an exe
 Run in command line
 ===================
 
-To run the Logger GUI in the command line, clone the NexusLIMS-Logger repository to your local drive::
+To run the Logger GUI in the command line, clone the NexusLIMS-Logger repository to your local drive
+using **Git**::
 
     git clone https://github.com/Euclid-Techlabs-LLC/NexusLIMS-Logger.git
     cd NexusLIMS-Logger
@@ -66,3 +72,4 @@ On MacOS::
        -n "NexusLIMS Session Logger" \
        -i "resources/logo_bare_xp.ico" \
        --add-data "resources:resources" main.py
+    

@@ -29,6 +29,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   Logger GUI Versions <logger_versions>
    Overview & Installation <readme>
    Logger GUI <logger_gui>
    Administrator Documentation <admin_doc>
